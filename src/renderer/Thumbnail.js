@@ -7,18 +7,12 @@ import CardContent from "@material-ui/core/CardContent";
 import CardMedia from "@material-ui/core/CardMedia";
 import Button from "@material-ui/core/Button";
 import Typography from "@material-ui/core/Typography";
-
-const useStyles = makeStyles({
-    root: {
-        maxWidth: 345,
-    },
-});
+import {getClasses} from "./style.js";
 
 export default function Thumbnail() {
-    const classes = useStyles();
-
+    const classes = getClasses();
     return (
-        <Card className={classes.root}>
+        <Card className={classes.thumbnail}>
             <CardActionArea>
                 <CardMedia
                     component="img"

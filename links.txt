@@ -2,3 +2,7 @@ https://github.com/electron-userland/electron-webpack
 https://material.io/develop/web/getting-started
 https://webpack.js.org/guides/typescript/
 https://material-ui.com/components/drawers/
+https://webpack.electron.build/add-ons#sassscss
+https://material-ui.com/styles/advanced/
+https://www.blazemeter.com/blog/the-correct-way-to-import-lodash-libraries-a-benchmark
+https://lodash.com/docs/4.17.15

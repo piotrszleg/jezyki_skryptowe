@@ -17,12 +17,12 @@ export default function Thumbnail(props) {
                     component="img"
                     alt="MNIST"
                     height="140"
-                    image="https://upload.wikimedia.org/wikipedia/commons/2/27/MnistExamples.png"
+                    image={props.image}
                     title="MNIST"
                 />
                 <CardContent>
                     <Typography gutterBottom variant="h5" component="h2">
-                        MNIST
+                        {props.title}
                     </Typography>
                     <Typography
                         variant="body2"

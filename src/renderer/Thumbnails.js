@@ -11,6 +11,16 @@ export default function Thumbnails() {
                     <Thumbnail 
                         local={i%5==0}
                         downloaded={i%5==0 || i%5==2}
+                        title={[
+                            "Basen - Wrocław",
+                            "Basen SAUVC",
+                            "Basen po Ciemku"
+                        ][i%3]}
+                        image={[
+                            "https://user-images.githubusercontent.com/16499460/96162648-12445800-0f19-11eb-8139-bfdf3aa8bdc6.png",
+                            "https://user-images.githubusercontent.com/16499460/96162674-196b6600-0f19-11eb-85df-6e91b94ef77a.png",
+                            "https://user-images.githubusercontent.com/16499460/96162687-1ec8b080-0f19-11eb-9c69-a60646bafad4.png"
+                        ][i%3]}
                     />
                 </Grid>
             )}

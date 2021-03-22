@@ -3,6 +3,7 @@ import CssBaseline from "@material-ui/core/CssBaseline";
 import Thumbnails from "./Thumbnails.js";
 import Topbar from "./Topbar.js";
 import Sidebar from "./Sidebar.js";
+import Settings from "./Settings.js";
 import {getClasses} from "./style.js";
 import Toolbar from "@material-ui/core/Toolbar";
 
@@ -15,7 +16,9 @@ export default function Page() {
             <Sidebar />
             <main className={classes.content}>
                 <Toolbar />
-                <Thumbnails />
+                {1 
+                ? <Thumbnails />
+                : <Settings />}
             </main>
         </div>
     );

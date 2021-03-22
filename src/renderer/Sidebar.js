@@ -5,8 +5,12 @@ import Divider from "@material-ui/core/Divider";
 import ListItem from "@material-ui/core/ListItem";
 import ListItemIcon from "@material-ui/core/ListItemIcon";
 import ListItemText from "@material-ui/core/ListItemText";
-import InboxIcon from "@material-ui/icons/MoveToInbox";
-import MailIcon from "@material-ui/icons/Mail";
+import ImageIcon from "@material-ui/icons/Image";
+import TimelineIcon from "@material-ui/icons/Timeline";
+import EmojiNatureIcon from "@material-ui/icons/EmojiNature";
+import AddAPhotoIcon from "@material-ui/icons/AddAPhoto";
+import SettingsIcon from "@material-ui/icons/Settings";
+import HelpOutlineIcon from "@material-ui/icons/HelpOutline";
 import { getClasses } from "./style.js";
 import Toolbar from "@material-ui/core/Toolbar";
 
@@ -23,31 +27,45 @@ export default function Sidebar() {
             <Toolbar />
             <div className={classes.drawerContainer}>
                 <List>
-                    {["Datasets", "Models", "Generators", "Programs"].map(
-                        (text, index) => (
-                            <ListItem button key={text}>
-                                <ListItemIcon>
-                                    {index % 2 === 0 ? (
-                                        <InboxIcon />
-                                    ) : (
-                                        <MailIcon />
-                                    )}
-                                </ListItemIcon>
-                                <ListItemText primary={text} />
-                            </ListItem>
-                        )
-                    )}
+                    <ListItem button>
+                        <ListItemIcon>
+                            <ImageIcon />
+                        </ListItemIcon>
+                        <ListItemText primary="Datasets" />
+                    </ListItem>
+                    <ListItem button>
+                        <ListItemIcon>
+                            <TimelineIcon />
+                        </ListItemIcon>
+                        <ListItemText primary="Models" />
+                    </ListItem>
+                    <ListItem button>
+                        <ListItemIcon>
+                            <AddAPhotoIcon />
+                        </ListItemIcon>
+                        <ListItemText primary="Generators" />
+                    </ListItem>
+                    <ListItem button>
+                        <ListItemIcon>
+                            <EmojiNatureIcon />
+                        </ListItemIcon>
+                        <ListItemText primary="Programs" />
+                    </ListItem>
                 </List>
                 <Divider />
                 <List>
-                    {["Settings", "About"].map((text, index) => (
-                        <ListItem button key={text}>
-                            <ListItemIcon>
-                                {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
-                            </ListItemIcon>
-                            <ListItemText primary={text} />
-                        </ListItem>
-                    ))}
+                <ListItem button>
+                        <ListItemIcon>
+                            <SettingsIcon />
+                        </ListItemIcon>
+                        <ListItemText primary="Settings" />
+                    </ListItem>
+                    <ListItem button>
+                        <ListItemIcon>
+                            <HelpOutlineIcon />
+                        </ListItemIcon>
+                        <ListItemText primary="About" />
+                    </ListItem>
                 </List>
             </div>
         </Drawer>

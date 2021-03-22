@@ -8,7 +8,10 @@ export default function Thumbnails() {
         <Grid container spacing={3} justify="space-evenly">
             {range(24).map(i=>
                 <Grid item xs={3} key={i}>
-                    <Thumbnail />
+                    <Thumbnail 
+                        local={i%5==0}
+                        downloaded={i%5==0 || i%5==2}
+                    />
                 </Grid>
             )}
         </Grid>

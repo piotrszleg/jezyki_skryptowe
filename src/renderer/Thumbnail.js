@@ -9,17 +9,17 @@ import Button from "@material-ui/core/Button";
 import Typography from "@material-ui/core/Typography";
 import {getClasses} from "./style.js";
 
-export default function Thumbnail() {
+export default function Thumbnail(props) {
     const classes = getClasses();
     return (
         <Card className={classes.thumbnail}>
             <CardActionArea>
                 <CardMedia
                     component="img"
-                    alt="Contemplative Reptile"
+                    alt="MNIST"
                     height="140"
                     image="https://upload.wikimedia.org/wikipedia/commons/2/27/MnistExamples.png"
-                    title="Contemplative Reptile"
+                    title="MNIST"
                 />
                 <CardContent>
                     <Typography gutterBottom variant="h5" component="h2">
@@ -35,12 +35,18 @@ export default function Thumbnail() {
                 </CardContent>
             </CardActionArea>
             <CardActions>
+                {(props.downloaded || props.local) && 
+                <Button size="small" color="primary">
+                    Train On
+                </Button>}
+                {props.local && 
+                <Button size="small" color="primary">
+                    Upload
+                </Button>}
+                {!props.downloaded && 
                 <Button size="small" color="primary">
                     Download
-                </Button>
-                <Button size="small" color="primary">
-                    Open
-                </Button>
+                </Button>}
             </CardActions>
         </Card>
     );

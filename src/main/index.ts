@@ -7,9 +7,9 @@ import { format as formatUrl } from "url";
 const isDevelopment = process.env.NODE_ENV !== "production";
 
 // global reference to mainWindow (necessary to prevent window from being garbage collected)
-let mainWindow:BrowserWindow|null;
+let mainWindow: BrowserWindow | null;
 
-function createMainWindow() : BrowserWindow {
+function createMainWindow(): BrowserWindow {
     const window = new BrowserWindow({
         webPreferences: { nodeIntegration: true },
     });
@@ -18,9 +18,10 @@ function createMainWindow() : BrowserWindow {
         window.webContents.openDevTools();
     }
 
-    
     if (isDevelopment) {
-        window.loadURL(`http://localhost:${process.env.ELECTRON_WEBPACK_WDS_PORT}`);
+        window.loadURL(
+            `http://localhost:${process.env.ELECTRON_WEBPACK_WDS_PORT}`
+        );
     } else {
         window.loadURL(
             formatUrl({

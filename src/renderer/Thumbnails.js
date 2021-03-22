@@ -12,9 +12,9 @@ export default function Thumbnails() {
                         local={i%5==0}
                         downloaded={i%5==0 || i%5==2}
                         title={[
-                            "Basen - Wrocław",
-                            "Basen SAUVC",
-                            "Basen po Ciemku"
+                            "Basen",
+                            "SAUVC",
+                            "Basen bez Światła"
                         ][i%3]}
                         image={[
                             "https://user-images.githubusercontent.com/16499460/96162648-12445800-0f19-11eb-8139-bfdf3aa8bdc6.png",

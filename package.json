@@ -13,6 +13,7 @@
     "@material-ui/icons": "^4.11.2",
     "fs": "^0.0.1-security",
     "lodash": "^4.17.21",
+    "megajs": "^0.17.2",
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
     "source-map-support": "^0.5.16"
@@ -21,6 +22,7 @@
     "@babel/preset-react": "^7.12.13",
     "@types/node": "12",
     "@types/webpack-env": "1.15.3",
+    "@types/megajs": "^0.14.1",
     "electron": "8.2.0",
     "electron-builder": "^22.4.1",
     "electron-webpack": "^2.8.2",

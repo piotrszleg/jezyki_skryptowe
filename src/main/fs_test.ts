@@ -1,34 +1,18 @@
 import * as fs from "fs";
 import {promisify} from "util";
 import {basename, extname} from "path";
+import {CATEGORIES, FileOrFolder} from "./file_commons";
 
 const LOCAL_PATH = "E:/jezyki_skryptowe";
-const CATEGORIES=[
-    "datasets",
-    "models",
-    "generators",
-    "programs",
-];
 
 const readdirPromise = promisify(fs.readdir);
 const statPromise = promisify(fs.stat);
 
-class FileOrFolder {
-    name: string;
-    path:string;
-    mdate:Date;
-    constructor(name:string, path:string, mdate:Date){
-        this.name=name;
-        this.path=path;
-        this.mdate=mdate;
-    }
-}
-
-
 export default async function print_local_files(){
     const result=new Map<string, FileOrFolder[]>();
     try {
-        await Promise.all(CATEGORIES.map(async category=>{
+        await Promise.all(CATEGORIES.map(
+        async category=>{
             const categoryPath=LOCAL_PATH+"/"+category
             const files=await readdirPromise(categoryPath);
             const filesData:FileOrFolder[]=await Promise.all(files.map(async (file:string)=>{

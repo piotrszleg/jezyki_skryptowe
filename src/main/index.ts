@@ -1,9 +1,10 @@
 "use strict";
 
-import { app, BrowserWindow } from "electron";
-import * as path from "path";
+import { app, BrowserWindow, Notification } from "electron";
+import { join } from "path";
 import { format as formatUrl } from "url";
 import print_local_files from "./fs_test";
+import print_remote_files from "./mega_test";
 
 const isDevelopment = process.env.NODE_ENV !== "production";
 
@@ -15,7 +16,14 @@ function createMainWindow(): BrowserWindow {
         webPreferences: { nodeIntegration: true },
     });
 
-    print_local_files();
+    // print_local_files();
+    print_remote_files();
+
+    /*const notification:Electron.NotificationConstructorOptions = {
+        title: 'Basic Notification',
+        body: 'Notification from the Main process'
+    }
+    new Notification(notification).show();*/
 
     if (isDevelopment) {
         window.webContents.openDevTools();
@@ -28,7 +36,7 @@ function createMainWindow(): BrowserWindow {
     } else {
         window.loadURL(
             formatUrl({
-                pathname: path.join(__dirname, "index.html"),
+                pathname: join(__dirname, "index.html"),
                 protocol: "file",
                 slashes: true,
             })

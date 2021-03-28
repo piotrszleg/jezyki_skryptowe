@@ -3,6 +3,7 @@
 import { app, BrowserWindow } from "electron";
 import * as path from "path";
 import { format as formatUrl } from "url";
+import print_local_files from "./fs_test";
 
 const isDevelopment = process.env.NODE_ENV !== "production";
 
@@ -13,6 +14,8 @@ function createMainWindow(): BrowserWindow {
     const window = new BrowserWindow({
         webPreferences: { nodeIntegration: true },
     });
+
+    print_local_files();
 
     if (isDevelopment) {
         window.webContents.openDevTools();

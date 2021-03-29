@@ -2,8 +2,9 @@
 
 import { join } from "path";
 import { format as formatUrl } from "url";
-import getLocalFolders from "./fs_test";
-import MegajsStorage from "./mega_test";
+import FsStorage from "./fs_storage";
+import MegajsStorage from "./mega_storage";
+import Storage from "./storage_";
 import { app, BrowserWindow, Notification } from "electron";
 
 const isDevelopment = process.env.NODE_ENV !== "production";
@@ -19,12 +20,12 @@ function notify(title:string, message:string){
     new Notification(notification).show();
 }
 
-async function logFolders(){
-    console.log(await getLocalFolders());
-    let storage=new MegajsStorage();
+async function handleStorage(storage:Storage, showNotifications:Boolean=true){
     await storage.connect();
-    storage.onChange(message => notify("Changes on MEGA drive", message));
-    console.log(storage.getFolders());
+    if(showNotifications){
+        storage.onChange(message => notify("Changes on MEGA drive", message));
+    }
+    console.log(await storage.getFolders());
 }
 
 function createMainWindow(): BrowserWindow {
@@ -32,7 +33,8 @@ function createMainWindow(): BrowserWindow {
         webPreferences: { nodeIntegration: true },
     });
 
-    logFolders();
+    handleStorage(new MegajsStorage());
+    handleStorage(new FsStorage());
 
     if (isDevelopment) {
         window.webContents.openDevTools();

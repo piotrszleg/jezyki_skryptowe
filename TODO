@@ -1,0 +1,5 @@
+- ścieżki funkcją a nie konkatenacją
+- zwracanie zamiast wypisywania folderów
+- diff folderów
+- powiadomienia
+- storage baseclass

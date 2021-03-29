@@ -1,29 +1,38 @@
 "use strict";
 
-import { app, BrowserWindow, Notification } from "electron";
 import { join } from "path";
 import { format as formatUrl } from "url";
-import print_local_files from "./fs_test";
-import print_remote_files from "./mega_test";
+import getLocalFolders from "./fs_test";
+import MegajsStorage from "./mega_test";
+import { app, BrowserWindow, Notification } from "electron";
 
 const isDevelopment = process.env.NODE_ENV !== "production";
 
 // global reference to mainWindow (necessary to prevent window from being garbage collected)
 let mainWindow: BrowserWindow | null;
 
+function notify(title:string, message:string){
+    const notification:Electron.NotificationConstructorOptions = {
+        title: title,
+        body: message
+    }
+    new Notification(notification).show();
+}
+
+async function logFolders(){
+    console.log(await getLocalFolders());
+    let storage=new MegajsStorage();
+    await storage.connect();
+    storage.onChange(message => notify("Changes on MEGA drive", message));
+    console.log(storage.getFolders());
+}
+
 function createMainWindow(): BrowserWindow {
     const window = new BrowserWindow({
         webPreferences: { nodeIntegration: true },
     });
 
-    // print_local_files();
-    print_remote_files();
-
-    /*const notification:Electron.NotificationConstructorOptions = {
-        title: 'Basic Notification',
-        body: 'Notification from the Main process'
-    }
-    new Notification(notification).show();*/
+    logFolders();
 
     if (isDevelopment) {
         window.webContents.openDevTools();

@@ -1,6 +1,6 @@
 import credentials from "./mega_credentials";
 import { Storage as MegajsPackageStorage } from 'megajs';
-import {CATEGORIES, FileOrFolder} from "./file_commons";
+import {CATEGORIES, FileOrFolder, FilesStructure} from "./file_commons";
 import {basename, extname} from "path";
 import {EventEmitter} from "events";
 import Storage from "./storage_";
@@ -30,8 +30,8 @@ export default class MegajsStorage implements Storage {
             emitter.addListener("update", file=>callback(`File or folder "${file.name}" was updated`));
         }
     }
-    getFolders():Promise<Map<string, FileOrFolder[]>>{
-        return new Promise<Map<string, FileOrFolder[]>>( (resolve, reject)=>{
+    getFolders():Promise<FilesStructure>{
+        return new Promise<FilesStructure>( (resolve, reject)=>{
             if(this.storage==null){
                 reject("You must call connect before getFolders.");
             } else {

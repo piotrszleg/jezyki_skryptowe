@@ -34,7 +34,7 @@ function createMainWindow(): BrowserWindow {
     });
 
     handleStorage(new MegajsStorage());
-    handleStorage(new FsStorage());
+    handleStorage(new FsStorage(), false);
 
     if (isDevelopment) {
         window.webContents.openDevTools();

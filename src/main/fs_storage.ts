@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import {promisify} from "util";
 import {basename, extname} from "path";
-import {CATEGORIES, FileOrFolder} from "./file_commons";
+import {CATEGORIES, FileOrFolder, FilesStructure} from "./file_commons";
 import { join } from "path";
 import Storage from "./storage_";
 
@@ -18,8 +18,8 @@ export default class FsStorage implements Storage {
         // event is either change or rename
         fs.watch(LOCAL_PATH, {recursive: true}, (event, filename)=>callback(`File or folder "${filename}" was `+event+"d"));
     }
-    getFolders():Promise<Map<string, FileOrFolder[]>>{
-        return new Promise<Map<string, FileOrFolder[]>>( (resolve, reject)=>{
+    getFolders():Promise<FilesStructure>{
+        return new Promise<FilesStructure>( (resolve, reject)=>{
             const result=new Map<string, FileOrFolder[]>();
             Promise.all(CATEGORIES.map(
                 async category=>{

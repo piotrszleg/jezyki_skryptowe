@@ -15,3 +15,5 @@ export class FileOrFolder {
         this.mdate=mdate;
     }
 }
+
+export type FilesStructure = Map<string, FileOrFolder[]>;

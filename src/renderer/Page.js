@@ -6,12 +6,14 @@ import Sidebar from "./Sidebar.js";
 import Settings from "./Settings.js";
 import {getClasses} from "./style.js";
 import Toolbar from "@material-ui/core/Toolbar";
+import LoginDialog from "./LoginDialog.js";
 
 export default function Page() {
     const classes = getClasses();
     return (
         <div className={classes.root}>
             <CssBaseline />
+            <LoginDialog reason="There's no saved login data." callback={e=>console.log(e)} />
             <Topbar />
             <Sidebar />
             <main className={classes.content}>

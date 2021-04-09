@@ -1,4 +1,6 @@
 import {FilesStructure, CATEGORIES} from "./file_commons";
+import fs from "fs";
+import Jimp from "Jimp";
 
 class DisplayedFile {
     name:string;
@@ -19,7 +21,23 @@ class DisplayedFile {
 
 export type DisplayedFilesStructure = Map<string, DisplayedFile[]>;
 
-function createDisplayedFolders(localFiles: FilesStructure, remoteFiles: FilesStructure) : DisplayedFilesStructure {
+async function base64_encode(file:string) {
+    try {
+        if(fs.statSync(file).isFile()){
+            const image = await Jimp.read(fs.readFileSync(new Buffer(file)));
+            await image.resize(100, 100);
+            await image.quality(0.5);
+            
+            return await image.getBase64Async(Jimp.MIME_JPEG);
+        }
+    } catch(err){
+        console.log("Error while processing image %s:\n%s", file, err);
+    }
+    return "";
+}
+
+
+export async function createDisplayedFolders(localFiles: FilesStructure, remoteFiles: FilesStructure) : Promise<DisplayedFilesStructure> {
     const result=new Map<string, DisplayedFile[]>();
 
     for(let category of CATEGORIES){
@@ -36,7 +54,7 @@ function createDisplayedFolders(localFiles: FilesStructure, remoteFiles: FilesSt
             }
         }
 
-        const remoteCategoryFiles=localFiles.get(category);
+        const remoteCategoryFiles=remoteFiles.get(category);
         if(remoteCategoryFiles!=undefined){
             for(let file of remoteCategoryFiles){
                 let displayedFile=categoryMap.get(file.name);

@@ -2,17 +2,17 @@ import { makeStyles } from "@material-ui/core/styles";
 
 const drawerWidth = 240;
 
-export const getClasses = makeStyles((theme) => ({
+export const styles =  ({
     root: {
         display: "flex",
     },
     appBar: {
-        zIndex: theme.zIndex.drawer + 1,
+        zIndex:   1,
     },
     drawer: {
         width: drawerWidth,
         flexShrink: 0,
-        zIndex: theme.zIndex.drawer - 1,
+        zIndex:  - 1,
     },
     drawerPaper: {
         width: drawerWidth,
@@ -22,6 +22,8 @@ export const getClasses = makeStyles((theme) => ({
     },
     content: {
         flexGrow: 1,
-        padding: theme.spacing(3),
+        padding: 10,
     },
-}));
+});
+
+export const getClasses = makeStyles((theme) => styles);

@@ -5,7 +5,9 @@ import { format as formatUrl } from "url";
 import FsStorage from "./fs_storage";
 import MegajsStorage from "./mega_storage";
 import Storage from "./storage_";
-import { app, BrowserWindow, Notification } from "electron";
+import { app, BrowserWindow, Notification, ipcMain } from "electron";
+import { FilesStructure } from "./file_commons";
+import { createDisplayedFolders, DisplayedFilesStructure } from "./displayed_folders";
 
 const isDevelopment = process.env.NODE_ENV !== "production";
 
@@ -20,21 +22,33 @@ function notify(title:string, message:string){
     new Notification(notification).show();
 }
 
-async function handleStorage(storage:Storage, showNotifications:Boolean=true){
+async function handleStorage(storage:Storage, showNotifications:Boolean=true):Promise<FilesStructure>{
     await storage.connect();
     if(showNotifications){
         storage.onChange(message => notify("Changes on MEGA drive", message));
     }
-    console.log(await storage.getFolders());
+    const folders=await storage.getFolders();
+    console.log(folders);
+    return folders;
+}
+
+async function handleStorages():Promise<DisplayedFilesStructure> {
+    const [localFiles, remoteFiles] = 
+        await Promise.all(
+        [handleStorage(new FsStorage(), false),
+        handleStorage(new MegajsStorage()) ]);
+
+    const displayedFiles=await createDisplayedFolders(localFiles, remoteFiles);
+    console.log(displayedFiles);
+    return displayedFiles;
 }
 
 function createMainWindow(): BrowserWindow {
     const window = new BrowserWindow({
         webPreferences: { nodeIntegration: true },
     });
-
-    handleStorage(new MegajsStorage());
-    handleStorage(new FsStorage(), false);
+    
+    ipcMain.on("requestFolders", (event, arg)=>handleStorages().then(event.reply.bind(undefined, "folders")));
 
     if (isDevelopment) {
         window.webContents.openDevTools();

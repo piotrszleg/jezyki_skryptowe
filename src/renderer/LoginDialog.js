@@ -27,7 +27,7 @@ export default class FormDialog extends React.Component {
 
     handleClose() {
         this.props.callback(this.state);
-        this.setState((state) => ({
+        this.setState(state => ({
             ...state,
             open: false,
         }));

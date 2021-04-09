@@ -15,34 +15,36 @@ export default function Thumbnail(props) {
             <CardActionArea>
                 <CardMedia
                     component="img"
-                    alt="MNIST"
+                    alt={props.file.name}
                     height="140"
-                    image={props.image}
-                    title="MNIST"
+                    image={
+                        props.file.image
+                        ||"https://user-images.githubusercontent.com/16499460/96162648-12445800-0f19-11eb-8139-bfdf3aa8bdc6.png"}
+                    title={props.file.name}
                 />
                 <CardContent>
                     <Typography gutterBottom variant="h5" component="h2">
-                        {props.title}
+                        {props.file.name}
                     </Typography>
                     <Typography
                         variant="body2"
                         color="textSecondary"
                         component="p"
                     >
-                        Labeled hand written numbers.
+                        {props.file.description}
                     </Typography>
                 </CardContent>
             </CardActionArea>
             <CardActions>
-                {(props.downloaded || props.local) && 
+                {props.file.allowTrain &&
                 <Button size="small" color="primary">
                     Train On
                 </Button>}
-                {props.local && 
+                {props.file.allowUpload &&
                 <Button size="small" color="primary">
                     Upload
                 </Button>}
-                {!props.downloaded && 
+                {props.file.allowDownload && 
                 <Button size="small" color="primary">
                     Download
                 </Button>}

@@ -7,9 +7,10 @@ import Settings from "./Settings.js";
 import { styles } from "./style.js";
 import Toolbar from "@material-ui/core/Toolbar";
 import LoginDialog from "./LoginDialog.js";
-import { ipcRenderer } from "electron";
+import PasswordDialog from "./PasswordDialog.js";
 import PropTypes from 'prop-types';
 import { withStyles } from '@material-ui/styles';
+import promiseIpc from 'electron-promise-ipc';
 
 class Page extends React.Component {
     constructor(props) {
@@ -23,12 +24,10 @@ class Page extends React.Component {
     }
 
     componentDidMount(){
-        ipcRenderer.on("folders", (event, folders)=>{
-            console.log(folders);
-            console.log(this.thumbnails);
-            this.setFolders(folders.get("datasets"));
-        });
-        ipcRenderer.send("requestFolders");
+        promiseIpc
+            .send("requestFolders")
+            .then(folders => this.setFolders(folders.get("datasets")))
+            .catch((e) => console.error(e));
     }
 
     setFolders(folders){
@@ -44,7 +43,6 @@ class Page extends React.Component {
         return (
             <div className={classes.root}>
                 <CssBaseline />
-                <LoginDialog ref={this.loginDialog} reason="There's no saved login data." callback={e=>console.log(e)} />
                 <Topbar />
                 <Sidebar />
                 <main className={classes.content}>

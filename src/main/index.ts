@@ -5,9 +5,11 @@ import { format as formatUrl } from "url";
 import FsStorage from "./fs_storage";
 import MegajsStorage from "./mega_storage";
 import Storage from "./storage_";
-import { app, BrowserWindow, Notification, ipcMain } from "electron";
+import { app, BrowserWindow, Notification, ipcMain, IpcMainEvent } from "electron";
 import { FilesStructure } from "./file_commons";
 import { createDisplayedFolders, DisplayedFilesStructure } from "./displayed_folders";
+import Settings from "./settings";
+import promiseIpc from 'electron-promise-ipc';
 
 const isDevelopment = process.env.NODE_ENV !== "production";
 
@@ -43,13 +45,52 @@ async function handleStorages():Promise<DisplayedFilesStructure> {
     return displayedFiles;
 }
 
+async function main() {
+    ipcMain.on("loadSettings", (event, arg)=>{
+        const settings = new Settings();
+        if(settings.databaseExists()) {
+            event.reply("requestPassword");
+            ipcMain.on("password", (event, password)=>{
+                try {
+                    settings.connectToDatabase(password);
+                    event.reply("connectedToSettingsDatabase");
+                } catch(e) {
+                    event.reply("requestPasswordAgain");
+                }
+            });
+        } else {
+            event.reply("requestNewPassword");
+            ipcMain.on("newPassword", (event, password)=>{
+                settings.connectToDatabase(password);
+                event.reply("connectedToSettingsDatabase");
+            });
+        }
+    });
+    ipcMain.on("loadFolders", (event, arg)=>{
+        // connect to mega
+        // loop:
+            // if failed request new mega credentials and save them if specified
+        // send folders
+    });
+}
+
 function createMainWindow(): BrowserWindow {
     const window = new BrowserWindow({
         webPreferences: { nodeIntegration: true },
     });
     
-    ipcMain.on("requestFolders", (event, arg)=>handleStorages().then(event.reply.bind(undefined, "folders")));
 
+// ask for folders
+// if there's no database file ask for password and create it 
+// try with empty db password
+// if it worked 
+// if password is incorrect ask for another one (different message)
+
+    promiseIpc.on("requestFolders", ()=>handleStorages());
+
+    /*ipcMain.on("requestFolders", (event, arg)=>event.reply);
+    ipcMain.on("requestFoldersWithMegaCredentials", ))
+    */
     if (isDevelopment) {
         window.webContents.openDevTools();
     }

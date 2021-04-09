@@ -11,10 +11,14 @@
   "dependencies": {
     "@material-ui/core": "^4.11.3",
     "@material-ui/icons": "^4.11.2",
+    "crypto": "^1.0.1",
+    "electron-promise-ipc": "^2.2.4",
     "fs": "^0.0.1-security",
     "jimp": "^0.16.1",
     "lodash": "^4.17.21",
+    "lowdb": "^1.0.0",
     "megajs": "^0.17.2",
+    "nedb": "^1.8.0",
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
     "source-map-support": "^0.5.16"
@@ -22,6 +26,7 @@
   "devDependencies": {
     "@babel/preset-react": "^7.12.13",
     "@types/megajs": "^0.14.1",
+    "@types/nedb": "^1.8.11",
     "@types/node": "12",
     "@types/webpack-env": "1.15.3",
     "electron": "8.2.0",

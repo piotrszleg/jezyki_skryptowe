@@ -24,11 +24,11 @@ export type DisplayedFilesStructure = Map<string, DisplayedFile[]>;
 async function base64_encode(file:string) {
     try {
         if(fs.statSync(file).isFile()){
-            const image = await Jimp.read(fs.readFileSync(new Buffer(file)));
+            const image = await Jimp.read(fs.readFileSync(file));
             await image.resize(100, 100);
             await image.quality(0.5);
             
-            return await image.getBase64Async(Jimp.MIME_JPEG);
+            return await image.getBase64Async(Jimp.MIME_PNG);
         }
     } catch(err){
         console.log("Error while processing image %s:\n%s", file, err);
@@ -47,11 +47,12 @@ export async function createDisplayedFolders(localFiles: FilesStructure, remoteF
         if(localCategoryFiles!=undefined){
             for(let file of localCategoryFiles){
                 // file is in local storage 
-                const displayedFile=new DisplayedFile(file.name, "", "", file.mdate);
+                const displayedFile=new DisplayedFile(file.name, "", await base64_encode(file.path), file.mdate);
                 displayedFile.allowTrain=true;
                 displayedFile.allowUpload=true;
                 categoryMap.set(file.name, displayedFile);
             }
+            
         }
 
         const remoteCategoryFiles=remoteFiles.get(category);

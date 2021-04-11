@@ -9,7 +9,7 @@ const ROOT_FOLDER_ID="MOp01QxZ";
 
 export default class MegajsStorage implements Storage {
     storage: MegajsPackageStorage|null=null;
-    
+
     connect():Promise<void>{
         return new Promise((resolve, reject)=>{
             try {

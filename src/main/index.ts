@@ -46,31 +46,52 @@ async function handleStorages():Promise<DisplayedFilesStructure> {
 }
 
 async function main() {
-    ipcMain.on("loadSettings", (event, arg)=>{
-        const settings = new Settings();
+    const settings = new Settings();
+    promiseIpc.on("loadSettings", (event?: IpcMainEvent)=>{
         if(settings.databaseExists()) {
-            event.reply("requestPassword");
-            ipcMain.on("password", (event, password)=>{
+            event?.reply("requestPassword");
+            promiseIpc.on("password", (password:unknown, event?: IpcMainEvent)=>{
                 try {
-                    settings.connectToDatabase(password);
-                    event.reply("connectedToSettingsDatabase");
+                    settings.connectToDatabase(<string>password);
+                    event?.reply("connectedToSettingsDatabase");
                 } catch(e) {
-                    event.reply("requestPasswordAgain");
+                    console.log(e);
+                    event?.reply("requestPasswordAgain");
                 }
             });
         } else {
-            event.reply("requestNewPassword");
-            ipcMain.on("newPassword", (event, password)=>{
-                settings.connectToDatabase(password);
-                event.reply("connectedToSettingsDatabase");
+            event?.reply("requestNewPassword");
+            promiseIpc.on("newPassword", (password:unknown, event?: IpcMainEvent)=>{
+                settings.connectToDatabase(<string>password);
+                event?.reply("connectedToSettingsDatabase");
             });
         }
     });
-    ipcMain.on("loadFolders", (event, arg)=>{
-        // connect to mega
-        // loop:
-            // if failed request new mega credentials and save them if specified
-        // send folders
+    promiseIpc.on("connectToMega", async (event?:IpcMainEvent)=>{
+        const megaStorage=new MegajsStorage();
+        let firstTry=true;
+
+        interface Credentials {
+            email:string;
+            password:string;
+        }
+
+        async function connectToMegaUsingCredentials(credentials:Credentials|null){
+            try {
+                if(credentials){
+                    settings.megaEmail=credentials.email;
+                    settings.megaPassword=credentials.password;
+                }
+                await megaStorage.connect();
+            } catch(e){ 
+                console.log(e);
+                event?.reply(firstTry ? "requestMegaCredentials" : "requestMegaCredentialsAgain");
+                firstTry=false;
+            }
+        }
+
+        promiseIpc.on("megaCredentials", (credentials:any, event?:IpcMainEvent)=>connectToMegaUsingCredentials(credentials));
+        connectToMegaUsingCredentials(null);
     });
 }
 
@@ -86,11 +107,10 @@ function createMainWindow(): BrowserWindow {
 // if it worked 
 // if password is incorrect ask for another one (different message)
 
-    promiseIpc.on("requestFolders", ()=>handleStorages());
+    // promiseIpc.on("requestFolders", ()=>handleStorages());
+    main();
 
-    /*ipcMain.on("requestFolders", (event, arg)=>event.reply);
-    ipcMain.on("requestFoldersWithMegaCredentials", ))
-    */
+
     if (isDevelopment) {
         window.webContents.openDevTools();
     }

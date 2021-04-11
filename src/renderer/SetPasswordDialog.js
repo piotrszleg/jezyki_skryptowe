@@ -16,7 +16,7 @@ export default class SetPasswordDialog extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            open: true,
+            open: false,
             password: ""
         };
     }

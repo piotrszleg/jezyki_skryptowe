@@ -5,7 +5,7 @@ import { format as formatUrl } from "url";
 import FsStorage from "./fs_storage";
 import MegajsStorage from "./mega_storage";
 import Storage from "./storage_";
-import { app, BrowserWindow, Notification, ipcMain, IpcMainEvent } from "electron";
+import { app, BrowserWindow, Notification, IpcMainEvent } from "electron";
 import { FilesStructure } from "./file_commons";
 import { createDisplayedFolders, DisplayedFilesStructure } from "./displayed_folders";
 import Settings from "./settings";
@@ -45,26 +45,31 @@ async function handleStorages():Promise<DisplayedFilesStructure> {
     return displayedFiles;
 }
 
-async function main() {
+async function main(webContents:Electron.WebContents) {
     const settings = new Settings();
     promiseIpc.on("loadSettings", (event?: IpcMainEvent)=>{
         if(settings.databaseExists()) {
-            event?.reply("requestPassword");
+            console.log("Requesting database password.");
             promiseIpc.on("password", (password:unknown, event?: IpcMainEvent)=>{
                 try {
                     settings.connectToDatabase(<string>password);
-                    event?.reply("connectedToSettingsDatabase");
+                    console.log("Password is valid.");
+                    promiseIpc.send("connectedToSettingsDatabase", webContents);
                 } catch(e) {
                     console.log(e);
-                    event?.reply("requestPasswordAgain");
+                    console.log("Password is invalid.");
+                    promiseIpc.send("requestPasswordAgain", webContents);
                 }
             });
+            promiseIpc.send("requestPassword", webContents);
         } else {
-            event?.reply("requestNewPassword");
+            console.log("There is no database, requesting new password.");
             promiseIpc.on("newPassword", (password:unknown, event?: IpcMainEvent)=>{
+                console.log("Changing database password to one provided.");
                 settings.connectToDatabase(<string>password);
-                event?.reply("connectedToSettingsDatabase");
+                promiseIpc.send("connectedToSettingsDatabase", webContents);
             });
+            promiseIpc.send("requestNewPassword", webContents);
         }
     });
     promiseIpc.on("connectToMega", async (event?:IpcMainEvent)=>{
@@ -83,33 +88,26 @@ async function main() {
                     settings.megaPassword=credentials.password;
                 }
                 await megaStorage.connect();
+                console.log("Connecting to Mega succeeded.");
             } catch(e){ 
                 console.log(e);
-                event?.reply(firstTry ? "requestMegaCredentials" : "requestMegaCredentialsAgain");
+                promiseIpc.send(firstTry ? "requestMegaCredentials" : "requestMegaCredentialsAgain", webContents);
                 firstTry=false;
+                console.log("Connecting to Mega failed.");
             }
         }
-
-        promiseIpc.on("megaCredentials", (credentials:any, event?:IpcMainEvent)=>connectToMegaUsingCredentials(credentials));
+        console.log("Trying to connect to mega using saved credentials.");
         connectToMegaUsingCredentials(null);
+        promiseIpc.on("megaCredentials", (credentials:any, event?:IpcMainEvent)=>connectToMegaUsingCredentials(credentials));
     });
+
+    promiseIpc.on("requestFolders", ()=>handleStorages());
 }
 
 function createMainWindow(): BrowserWindow {
     const window = new BrowserWindow({
         webPreferences: { nodeIntegration: true },
     });
-    
-
-// ask for folders
-// if there's no database file ask for password and create it 
-// try with empty db password
-// if it worked 
-// if password is incorrect ask for another one (different message)
-
-    // promiseIpc.on("requestFolders", ()=>handleStorages());
-    main();
-
 
     if (isDevelopment) {
         window.webContents.openDevTools();
@@ -131,6 +129,8 @@ function createMainWindow(): BrowserWindow {
 
     window.on("closed", () => {
         mainWindow = null;
+        ["loadSettings", "password", "newPassword", "connectToMega", "megaCredentials"].map(e=>
+            promiseIpc.off(e));
     });
 
     window.webContents.on("devtools-opened", () => {
@@ -139,6 +139,8 @@ function createMainWindow(): BrowserWindow {
             window.focus();
         });
     });
+    
+    main(window.webContents);
 
     return window;
 }

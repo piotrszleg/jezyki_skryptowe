@@ -14,8 +14,15 @@ import HelpOutlineIcon from "@material-ui/icons/HelpOutline";
 import { getClasses } from "./style.js";
 import Toolbar from "@material-ui/core/Toolbar";
 
-export default function Sidebar() {
+export default function Sidebar(props) {
     const classes = getClasses();
+
+    const items=[
+        ["Datasets", ()=><ImageIcon />], 
+        ["Models", ()=><TimelineIcon />], 
+        ["Generators", ()=><AddAPhotoIcon />], 
+        ["Programs", ()=><EmojiNatureIcon />]];
+
     return (
         <Drawer
             className={classes.drawer}
@@ -27,30 +34,17 @@ export default function Sidebar() {
             <Toolbar />
             <div className={classes.drawerContainer}>
                 <List>
-                    <ListItem button>
+                    {items.map(([name, icon], index)=>
+                    <ListItem button 
+                            key={index}
+                            selected={props.selectedFolder==index} 
+                            onClick={() => props.callback(name.toLowerCase())}>
                         <ListItemIcon>
-                            <ImageIcon />
+                            {icon()}
                         </ListItemIcon>
-                        <ListItemText primary="Datasets" />
-                    </ListItem>
-                    <ListItem button>
-                        <ListItemIcon>
-                            <TimelineIcon />
-                        </ListItemIcon>
-                        <ListItemText primary="Models" />
-                    </ListItem>
-                    <ListItem button>
-                        <ListItemIcon>
-                            <AddAPhotoIcon />
-                        </ListItemIcon>
-                        <ListItemText primary="Generators" />
-                    </ListItem>
-                    <ListItem button>
-                        <ListItemIcon>
-                            <EmojiNatureIcon />
-                        </ListItemIcon>
-                        <ListItemText primary="Programs" />
-                    </ListItem>
+                        <ListItemText primary={name} />
+                    </ListItem>)
+                    }
                 </List>
                 <Divider />
                 <List>

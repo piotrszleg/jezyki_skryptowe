@@ -5,7 +5,7 @@ import {CATEGORIES, FileOrFolder, FilesStructure} from "./file_commons";
 import { join } from "path";
 import Storage from "./storage_";
 
-const LOCAL_PATH = "E:/jezyki_skryptowe";
+export const LOCAL_PATH = "E:/jezyki_skryptowe";
 
 const readdirPromise = promisify(fs.readdir);
 const statPromise = promisify(fs.stat);

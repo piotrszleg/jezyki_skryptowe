@@ -17,7 +17,8 @@ class Page extends React.Component {
     constructor(props) {
         super(props);
         this.state={
-            folders:[],
+            folders:null,
+            selectedFolder:"datasets",
             classes:{}
         }
         this.passwordDialog=React.createRef();
@@ -28,6 +29,10 @@ class Page extends React.Component {
 
     componentDidMount(){
         this.goThroughLoginProcess();
+    }
+
+    setSelectedFolder(index) {
+        this.setState(state=>({...state, selectedFolder:index}));
     }
 
     async goThroughLoginProcess() {
@@ -43,17 +48,34 @@ class Page extends React.Component {
         await promiseIpc.send("loadSettings", 1);
         console.log("Requesting connecting to mega.");
         await promiseIpc.send("connectToMega", 1);
+        this.loadFolders();
+    }
+
+    async loadFolders(){
         console.log("Requesting folders.");
         const folders=await promiseIpc.send("requestFolders");
         console.log(folders);
-        this.setFolders(folders["datasets"]);
+        this.setFolders(folders);
     }
 
     setFolders(folders){
         this.setState(state=>({...state, folders:folders}))
     }
 
-    componentWillUnmount(){
+    getItemsList(){
+        if(this.state.folders && this.state.folders.has(this.state.selectedFolder)){
+            return this.state.folders.get(this.state.selectedFolder);
+        } else {
+            return [];
+        }
+    }
+
+    async sendAction(folder, name, action){
+        console.log(`Requested action ${action} for '${folder}/${name}'`);
+        if(await promiseIpc.send("action", folder, name, action)){
+            console.log("Action returned true.");
+            // this.loadFolders();
+        }
     }
     
     render() {
@@ -65,11 +87,11 @@ class Page extends React.Component {
                 <PasswordDialog ref={this.passwordDialog} callback={credentials=>promiseIpc.send("password", credentials)} />
                 <SetPasswordDialog ref={this.setPasswordDialog} callback={credentials=>promiseIpc.send("newPassword", credentials)} />
                 <LoginDialog ref={this.loginDialog} callback={credentials=>promiseIpc.send("megaCredentials", credentials)} />
-                <Sidebar />
+                <Sidebar callback={this.setSelectedFolder.bind(this)} selectedFolder={this.state.selectedFolder} />
                 <main className={classes.content}>
                     <Toolbar />
                     {1 
-                    ? <Thumbnails folders={this.state.folders} />
+                    ? <Thumbnails folders={this.getItemsList()} actionCallback={(name, action)=>this.sendAction(this.state.selectedFolder, name, action)} />
                     : <Settings />}
                 </main>
             </div>

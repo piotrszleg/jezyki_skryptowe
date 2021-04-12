@@ -1,22 +1,38 @@
 import {FilesStructure, CATEGORIES} from "./file_commons";
 import fs from "fs";
 import Jimp from "Jimp";
+import { LOCAL_PATH } from "./fs_storage";
+import { MutableFile } from 'megajs';
+
+import { join } from "path";
+
+type Action = "Train" | "Upload" | "Download";
 
 class DisplayedFile {
     name:string;
     mdate:Date;
     description:string;
     image:string;
-    allowTrain:boolean=false;
-    allowUpload:boolean=false;
-    allowDownload:boolean=false;
+    actions:Action[];
+    handleAction:()=>boolean;
 
-    constructor(name:string, description:string, image:string, mdate:Date){
+    constructor(name:string, description:string, image:string, mdate:Date, actions:Action[], handleAction:()=>boolean){
         this.name = name;
         this.description = description;
         this.image = image;
         this.mdate = mdate;
+        this.actions = actions;
+        this.handleAction = handleAction;
     }
+}
+
+function download(category:string, file:MutableFile){
+    file.download().pipe(fs.createWriteStream(join(LOCAL_PATH, category, file.name)));
+}
+
+async function upload(category:string, file:MutableFile, folder:MutableFile){
+    file.delete(true, (error)=>{throw error});
+    fs.createReadStream(join(LOCAL_PATH, category, file.name)).pipe(folder.upload(file.name))
 }
 
 export type DisplayedFilesStructure = Map<string, DisplayedFile[]>;
@@ -39,6 +55,7 @@ async function base64_encode(file:string) {
 
 export async function createDisplayedFolders(localFiles: FilesStructure, remoteFiles: FilesStructure) : Promise<DisplayedFilesStructure> {
     const result=new Map<string, DisplayedFile[]>();
+    const promises:Promise<any>[]=[];
 
     for(let category of CATEGORIES){
         const categoryMap = new Map<string, DisplayedFile>();
@@ -46,13 +63,11 @@ export async function createDisplayedFolders(localFiles: FilesStructure, remoteF
         const localCategoryFiles=localFiles.get(category);
         if(localCategoryFiles!=undefined){
             for(let file of localCategoryFiles){
-                // file is in local storage 
-                const displayedFile=new DisplayedFile(file.name, "", await base64_encode(file.path), file.mdate);
-                displayedFile.allowTrain=true;
-                displayedFile.allowUpload=true;
+                // file is in local storage
+                const displayedFile=new DisplayedFile(file.name, "", "", file.mdate, ["Train", "Upload", "Download"], ()=>false);
+                promises.push(base64_encode(file.path).then(encodedImage=>displayedFile.image=encodedImage));
                 categoryMap.set(file.name, displayedFile);
             }
-            
         }
 
         const remoteCategoryFiles=remoteFiles.get(category);
@@ -62,21 +77,20 @@ export async function createDisplayedFolders(localFiles: FilesStructure, remoteF
                 if(displayedFile!=undefined) {
                     if(displayedFile.mdate<file.mdate){
                         // remote has newer version of the file 
-                        const displayedFile=new DisplayedFile(file.name, "", "", file.mdate);
-                        displayedFile.allowDownload=true;
+                        const displayedFile=new DisplayedFile(file.name, "", "", file.mdate, ["Train", "Download"], ()=>false);
                         categoryMap.set(file.name, displayedFile);
                     }
                 } else {
                     // file is only on remote 
-                    displayedFile=new DisplayedFile(file.name, "", "", file.mdate);
-                    displayedFile.allowDownload=true;
+                    displayedFile=new DisplayedFile(file.name, "", "", file.mdate, ["Download"]);
                     categoryMap.set(file.name, displayedFile);
                 }
             }
         }
-
+        
         result.set(category, [...categoryMap.values()]);
     }
+    await Promise.all(promises);
 
     return result;
 }

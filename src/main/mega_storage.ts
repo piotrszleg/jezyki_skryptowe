@@ -7,6 +7,12 @@ import Storage from "./storage_";
 
 const ROOT_FOLDER_ID="MOp01QxZ";
 
+class MegaFileOrFolder extends FileOrFolder {
+    handleAction(action:string) {
+        
+    }
+}
+
 export default class MegajsStorage implements Storage {
     storage: MegajsPackageStorage|null=null;
 
@@ -15,7 +21,8 @@ export default class MegajsStorage implements Storage {
             try {
                 this.storage = new MegajsPackageStorage(credentials, resolve);
             } catch(err) {
-                reject(err);
+                console.log(err);
+                // reject(err);
             }
         });
     }

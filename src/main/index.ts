@@ -46,6 +46,7 @@ async function handleStorages():Promise<DisplayedFilesStructure> {
 }
 
 async function main(webContents:Electron.WebContents) {
+
     const settings = new Settings();
     promiseIpc.on("loadSettings", (event?: IpcMainEvent)=>{
         if(settings.databaseExists()) {
@@ -101,7 +102,22 @@ async function main(webContents:Electron.WebContents) {
         promiseIpc.on("megaCredentials", (credentials:any, event?:IpcMainEvent)=>connectToMegaUsingCredentials(credentials));
     });
 
-    promiseIpc.on("requestFolders", ()=>handleStorages());
+    promiseIpc.on("requestFolders", async ()=>{
+        const displayedFiles=await handleStorages();
+        promiseIpc.on("action", (folder:unknown, name:unknown, action:unknown, event?: IpcMainEvent)=>{
+            console.log(`Received action ${action} for '${folder}/${name}'`);
+            let file=displayedFiles.get(<string>folder)?.find(file=>file.name==name);
+            if(file){
+                return file.handleAction(action);
+            } else{
+                return false;
+            }
+        });
+
+        return displayedFiles;
+    });
+    
+    
 }
 
 function createMainWindow(): BrowserWindow {

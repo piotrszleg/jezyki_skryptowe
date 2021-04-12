@@ -36,18 +36,11 @@ export default function Thumbnail(props) {
                 </CardContent>
             </CardActionArea>
             <CardActions>
-                {props.file.allowTrain &&
-                <Button size="small" color="primary">
-                    Train On
-                </Button>}
-                {props.file.allowUpload &&
-                <Button size="small" color="primary">
-                    Upload
-                </Button>}
-                {props.file.allowDownload && 
-                <Button size="small" color="primary">
-                    Download
-                </Button>}
+                {props.file.actions.map((action, index)=>
+                    <Button key={index} size="small" color="primary" onClick={()=>props.actionCallback(props.file.name, action)}>
+                        {action}
+                    </Button>
+                )}   
             </CardActions>
         </Card>
     );

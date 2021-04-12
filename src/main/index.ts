@@ -25,9 +25,8 @@ function notify(title:string, message:string){
 }
 
 async function handleStorage(storage:Storage, showNotifications:Boolean=true):Promise<FilesStructure>{
-    await storage.connect();
     if(showNotifications){
-        storage.onChange(message => notify("Changes on MEGA drive", message));
+        storage.onChange(message => notify("Changes on drive", message));
     }
     const folders=await storage.getFolders();
     console.log(folders);
@@ -35,10 +34,29 @@ async function handleStorage(storage:Storage, showNotifications:Boolean=true):Pr
 }
 
 async function handleStorages():Promise<DisplayedFilesStructure> {
+    const megaStorage=new MegajsStorage();
+
+    await megaStorage.connect()
+    promiseIpc.on("action", async (folder:unknown, name:unknown, action:unknown, event?: IpcMainEvent)=>{
+            console.log(`Received action ${action} for '${folder}/${name}'`);
+            if(action=="Upload"){
+                await megaStorage.upload(<string>folder, <string>name);
+                return true;
+            } else if (action=="Download"){
+                await megaStorage.download(<string>folder, <string>name);
+                return true;
+            } else {
+                return false;
+            }
+    });
+
+    const fsStorage=new FsStorage();
+    await fsStorage.connect();
+
     const [localFiles, remoteFiles] = 
         await Promise.all(
-        [handleStorage(new FsStorage(), false),
-        handleStorage(new MegajsStorage()) ]);
+        [handleStorage(fsStorage, false),
+        handleStorage(megaStorage) ]);
 
     const displayedFiles=await createDisplayedFolders(localFiles, remoteFiles);
     console.log(displayedFiles);
@@ -106,12 +124,6 @@ async function main(webContents:Electron.WebContents) {
         const displayedFiles=await handleStorages();
         promiseIpc.on("action", (folder:unknown, name:unknown, action:unknown, event?: IpcMainEvent)=>{
             console.log(`Received action ${action} for '${folder}/${name}'`);
-            let file=displayedFiles.get(<string>folder)?.find(file=>file.name==name);
-            if(file){
-                return file.handleAction(action);
-            } else{
-                return false;
-            }
         });
 
         return displayedFiles;

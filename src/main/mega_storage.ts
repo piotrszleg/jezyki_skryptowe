@@ -1,28 +1,52 @@
 import credentials from "./mega_credentials";
-import { Storage as MegajsPackageStorage } from 'megajs';
+import { Storage as MegajsPackageStorage, File, MutableFile } from 'megajs';
 import {CATEGORIES, FileOrFolder, FilesStructure} from "./file_commons";
 import {basename, extname} from "path";
 import {EventEmitter} from "events";
 import Storage from "./storage_";
+import { LOCAL_PATH } from "./fs_storage";
+import { join } from "path";
+import fs from "fs";
 
 const ROOT_FOLDER_ID="MOp01QxZ";
 
-class MegaFileOrFolder extends FileOrFolder {
-    handleAction(action:string) {
-        
-    }
-}
-
 export default class MegajsStorage implements Storage {
     storage: MegajsPackageStorage|null=null;
+    rootFolder: MutableFile|null=null;
+    categories:Map<string, MutableFile>=new Map<string, MutableFile>();
+    
+    download(category:string, file:string){
+        this.categories.get(category)?.children.find(megaFile=>megaFile.name==file)?.download().pipe(fs.createWriteStream(join(LOCAL_PATH, category, file)));
+    }
+
+    async upload(category:string, file:string){
+        if(this.rootFolder==null){
+            throw new Error("You must call connect before upload.");
+        }
+        let folder=this.categories.get(category);
+        if(!folder){
+            // if category folder does not exist create it
+            this.rootFolder.mkdir(category);
+            folder=<MutableFile>this.rootFolder.children.find(f=>f.name==category);
+            this.categories.set(category, folder);
+        }
+        const megaFile=folder?.children.find(megaFile=>megaFile.name==file);
+        if(megaFile){
+            // delete previous file 
+            (<MutableFile>megaFile).delete(true, (error)=>{throw error});
+        }
+        // upload current file 
+        fs.createReadStream(join(LOCAL_PATH, category, file)).pipe(folder.upload(file));
+    }
 
     connect():Promise<void>{
         return new Promise((resolve, reject)=>{
             try {
                 this.storage = new MegajsPackageStorage(credentials, resolve);
+                const rootFolder=this.storage.root.children.find(f=>f.nodeId==ROOT_FOLDER_ID);
+                this.rootFolder=<MutableFile>rootFolder;
             } catch(err) {
-                console.log(err);
-                // reject(err);
+                reject(err);
             }
         });
     }
@@ -42,7 +66,7 @@ export default class MegajsStorage implements Storage {
             if(this.storage==null){
                 reject("You must call connect before getFolders.");
             } else {
-                const rootFolder=this.storage.root.children.find(f=>f.nodeId==ROOT_FOLDER_ID);
+                const rootFolder=this.rootFolder;
                 if(rootFolder!=undefined){
                     const result=new Map<string, FileOrFolder[]>();
 

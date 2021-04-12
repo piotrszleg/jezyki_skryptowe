@@ -17,7 +17,8 @@ export default class PasswordDialog extends React.Component {
         super(props);
         this.state = {
             open: false,
-            password: ""
+            password: "",
+            error:false
         };
     }
 
@@ -28,16 +29,19 @@ export default class PasswordDialog extends React.Component {
         }));
     }
 
-    handleClose() {
-        this.props.callback(this.state);
+    close() {
         this.setState(state => ({
             ...state,
-            open: false,
+            open: false
         }));
     }
 
     setPassword(event) {
         this.setState((state) => ({ ...state, password: event.target.value }));
+    }
+
+    setError(){
+        this.setState((state) => ({ ...state, error : true }));
     }
 
     render() {
@@ -59,17 +63,18 @@ export default class PasswordDialog extends React.Component {
                         value={this.state.password}
                         onChange={this.setPassword.bind(this)}
                         fullWidth
+                        error={this.state.error}
                     />
                 </DialogContent>
                 <DialogActions>
                     <Button
-                        onClick={this.handleClose.bind(this)}
+                        onClick={this.props.changeCallback}
                         color="primary"
                     >
                         Reset settings and password
                     </Button>
                     <Button
-                        onClick={this.handleClose.bind(this)}
+                        onClick={()=>this.props.callback(this.state.password)}
                         color="primary"
                     >
                         Enter

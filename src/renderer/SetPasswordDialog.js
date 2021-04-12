@@ -22,10 +22,17 @@ export default class SetPasswordDialog extends React.Component {
     }
 
     handleClose() {
-        this.props.callback(this.state);
+        this.props.callback(this.state.password);
         this.setState(state => ({
             ...state,
             open: false,
+        }));
+    }
+
+    open() {
+        this.setState(state => ({
+            ...state,
+            open: true
         }));
     }
 

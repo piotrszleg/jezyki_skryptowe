@@ -14,25 +14,28 @@ function connectToDatabase(secret: string) {
         .digest("base64")
         .substr(0, 32);
 
-    return new Datastore({
-        filename: DB_PATH,
-        autoload: true,
-        afterSerialization(plaintext: string) {
-            const iv = crypto.randomBytes(16);
-            const aes = crypto.createCipheriv(algorithm, key, iv);
-            let ciphertext = aes.update(plaintext);
-            ciphertext = Buffer.concat([iv, ciphertext, aes.final()]);
-            return ciphertext.toString("base64");
-        },
-        beforeDeserialization(ciphertext: string) {
-            const ciphertextBytes = Buffer.from(ciphertext, "base64");
-            const iv = ciphertextBytes.slice(0, 16);
-            const data = ciphertextBytes.slice(16);
-            const aes = crypto.createDecipheriv(algorithm, key, iv);
-            let plaintextBytes = Buffer.from(aes.update(data));
-            plaintextBytes = Buffer.concat([plaintextBytes, aes.final()]);
-            return plaintextBytes.toString();
-        },
+    return new Promise((resolve, reject) => {
+        const db= new Datastore({
+            filename: DB_PATH,
+            autoload: true,
+            onload: (error:string|null) => (error ? reject(error) : resolve(db)),
+            afterSerialization(plaintext: string) {
+                const iv = crypto.randomBytes(16);
+                const aes = crypto.createCipheriv(algorithm, key, iv);
+                let ciphertext = aes.update(plaintext);
+                ciphertext = Buffer.concat([iv, ciphertext, aes.final()]);
+                return ciphertext.toString("base64");
+            },
+            beforeDeserialization(ciphertext: string) {
+                const ciphertextBytes = Buffer.from(ciphertext, "base64");
+                const iv = ciphertextBytes.slice(0, 16);
+                const data = ciphertextBytes.slice(16);
+                const aes = crypto.createDecipheriv(algorithm, key, iv);
+                let plaintextBytes = Buffer.from(aes.update(data));
+                plaintextBytes = Buffer.concat([plaintextBytes, aes.final()]);
+                return plaintextBytes.toString();
+            },
+        });
     });
 }
 
@@ -40,15 +43,21 @@ export default class Settings {
     db: typeof Datastore;
     document: any;
     async connectToDatabase(password: string) {
-        this.db = connectToDatabase(password);
-        this.document = await this.db.findOne({ type: "settings" });
-        if (this.document == null) {
+        try {
+            this.db = await connectToDatabase(password);
+            this.document = await this.db.findOne({ type: "settings" });
+            if (this.document == null) {
+                throw new Error("Incorrect password.");
+            }
+        } catch(e){
             throw new Error("Incorrect password.");
         }
     }
     async createDatabase(password: string) {
-        this.db = connectToDatabase(password);
-        this.db.remove({});
+        if(this.databaseExists()){
+            fs.unlinkSync(DB_PATH);
+        }
+        this.db = await connectToDatabase(password);
         this.document = await this.db.insert({ type: "settings" });
     }
     databaseExists() {

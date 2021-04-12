@@ -64,7 +64,29 @@ async function handleStorages():Promise<DisplayedFilesStructure> {
 }
 
 async function main(webContents:Electron.WebContents) {
+
+    
     const settings = new Settings();
+
+    promiseIpc.on("password", async (password:unknown, event?: IpcMainEvent)=>{
+        try {
+            await settings.connectToDatabase(<string>password);
+            console.log("Password is valid.");
+            return true;
+        } catch(e) {
+            console.log(e);
+            console.log("Password is invalid.");
+            return false;
+        }
+    });
+
+    promiseIpc.on("newPassword", async (password:unknown, event?: IpcMainEvent)=>{
+        console.log(`Changing database password to one provided: "${<string>password}"`);
+        await settings.createDatabase(<string>password);
+        return true;
+    });
+
+
     promiseIpc.on("loadSettings", (event?: IpcMainEvent)=>{
         if(settings.databaseExists()) {
             console.log("Requesting database password.");

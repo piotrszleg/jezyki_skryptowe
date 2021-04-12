@@ -36,10 +36,12 @@ class Page extends React.Component {
     }
 
     async goThroughLoginProcess() {
-        promiseIpc.on("requestPassword", ()=>this.passwordDialog.current.open());
+        this.passwordDialog.current.open();
+        this.loadFolders();
+        /* promiseIpc.on("requestPassword", ()=>this.passwordDialog.current.open());
         promiseIpc.on("requestPasswordAgain", ()=>this.passwordDialog.current.open(true));
         
-        promiseIpc.on("requestNewPassword", ()=>this.setPasswordDialog.current.open());
+        promiseIpc.on("requestNewPassword", ()=>);
 
         promiseIpc.on("requestMegaCredentials", ()=>this.loginDialog.current.open());
         promiseIpc.on("requestMegaCredentialsAgain", ()=>this.loginDialog.current.open(true));
@@ -48,7 +50,7 @@ class Page extends React.Component {
         await promiseIpc.send("loadSettings", 1);
         console.log("Requesting connecting to mega.");
         await promiseIpc.send("connectToMega", 1);
-        this.loadFolders();
+        this.loadFolders(); */
     }
 
     async loadFolders(){
@@ -74,7 +76,20 @@ class Page extends React.Component {
         console.log(`Requested action ${action} for '${folder}/${name}'`);
         if(await promiseIpc.send("action", folder, name, action)){
             console.log("Action returned true.");
-            // this.loadFolders();
+            this.loadFolders();
+        }
+    }
+
+    switchToSettingPassword(){
+        this.passwordDialog.current.close();
+        this.setPasswordDialog.current.open();
+    }
+
+    async onPasswordInput(password){
+        if(await promiseIpc.send("password", password)){
+            this.passwordDialog.current.close();
+        } else {
+            this.passwordDialog.current.setError();
         }
     }
     
@@ -84,8 +99,13 @@ class Page extends React.Component {
             <div className={classes.root}>
                 <CssBaseline />
                 <Topbar />
-                <PasswordDialog ref={this.passwordDialog} callback={credentials=>promiseIpc.send("password", credentials)} />
-                <SetPasswordDialog ref={this.setPasswordDialog} callback={credentials=>promiseIpc.send("newPassword", credentials)} />
+                <PasswordDialog 
+                    ref={this.passwordDialog} 
+                    callback={this.onPasswordInput.bind(this)} 
+                    changeCallback={this.switchToSettingPassword.bind(this)} />
+                <SetPasswordDialog 
+                    ref={this.setPasswordDialog} 
+                    callback={password=>promiseIpc.send("newPassword", password)} />
                 <LoginDialog ref={this.loginDialog} callback={credentials=>promiseIpc.send("megaCredentials", credentials)} />
                 <Sidebar callback={this.setSelectedFolder.bind(this)} selectedFolder={this.state.selectedFolder} />
                 <main className={classes.content}>

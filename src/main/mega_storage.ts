@@ -14,6 +14,23 @@ export default class MegajsStorage implements Storage {
     storage: MegajsPackageStorage|null=null;
     rootFolder: MutableFile|null=null;
     categories:Map<string, MutableFile>=new Map<string, MutableFile>();
+
+    connect():Promise<void>{
+        return new Promise((resolve, reject)=>{
+            try {
+                this.storage = new MegajsPackageStorage(credentials, (error:string|null)=>{
+                    if(error){
+                        reject(error);
+                    }
+                    const rootFolder=this.storage?.root.children.find(f=>f.nodeId==ROOT_FOLDER_ID);
+                    this.rootFolder=<MutableFile>rootFolder;
+                    resolve();
+                });
+            } catch(err) {
+                reject(err);
+            }
+        });
+    }
     
     download(category:string, file:string):Promise<void>{
         return new Promise<void>((resolve, reject) =>{
@@ -48,20 +65,6 @@ export default class MegajsStorage implements Storage {
             }
             // upload current file 
             fs.createReadStream(join(LOCAL_PATH, category, file)).pipe(folder.upload(file)).on('finish', resolve);
-        });
-    }
-
-    connect():Promise<void>{
-        return new Promise((resolve, reject)=>{
-            try {
-                this.storage = new MegajsPackageStorage(credentials, ()=>{
-                    const rootFolder=this.storage?.root.children.find(f=>f.nodeId==ROOT_FOLDER_ID);
-                    this.rootFolder=<MutableFile>rootFolder;
-                    resolve();
-                });
-            } catch(err) {
-                reject(err);
-            }
         });
     }
     onChange(callback: (messege : string)=>void){

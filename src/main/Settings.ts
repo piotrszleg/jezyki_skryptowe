@@ -43,8 +43,13 @@ export default class Settings {
         this.db = connectToDatabase(password);
         this.document = await this.db.findOne({ type: "settings" });
         if (this.document == null) {
-            this.document = await this.db.insert({ type: "settings" });
+            throw new Error("Incorrect password.");
         }
+    }
+    async createDatabase(password: string) {
+        this.db = connectToDatabase(password);
+        this.db.remove({});
+        this.document = await this.db.insert({ type: "settings" });
     }
     databaseExists() {
         return fs.existsSync(DB_PATH);

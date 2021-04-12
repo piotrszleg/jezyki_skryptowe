@@ -36,7 +36,7 @@ async function handleStorage(storage:Storage, showNotifications:Boolean=true):Pr
 async function handleStorages():Promise<DisplayedFilesStructure> {
     const megaStorage=new MegajsStorage();
 
-    await megaStorage.connect()
+    await megaStorage.connect();
     promiseIpc.on("action", async (folder:unknown, name:unknown, action:unknown, event?: IpcMainEvent)=>{
             console.log(`Received action ${action} for '${folder}/${name}'`);
             if(action=="Upload"){
@@ -64,7 +64,6 @@ async function handleStorages():Promise<DisplayedFilesStructure> {
 }
 
 async function main(webContents:Electron.WebContents) {
-
     const settings = new Settings();
     promiseIpc.on("loadSettings", (event?: IpcMainEvent)=>{
         if(settings.databaseExists()) {
@@ -85,14 +84,14 @@ async function main(webContents:Electron.WebContents) {
             console.log("There is no database, requesting new password.");
             promiseIpc.on("newPassword", (password:unknown, event?: IpcMainEvent)=>{
                 console.log("Changing database password to one provided.");
-                settings.connectToDatabase(<string>password);
+                settings.createDatabase(<string>password);
                 promiseIpc.send("connectedToSettingsDatabase", webContents);
             });
             promiseIpc.send("requestNewPassword", webContents);
         }
     });
     promiseIpc.on("connectToMega", async (event?:IpcMainEvent)=>{
-        const megaStorage=new MegajsStorage();
+        // const megaStorage=new MegajsStorage();
         let firstTry=true;
 
         interface Credentials {
@@ -106,7 +105,7 @@ async function main(webContents:Electron.WebContents) {
                     settings.megaEmail=credentials.email;
                     settings.megaPassword=credentials.password;
                 }
-                await megaStorage.connect();
+                // await megaStorage.connect();
                 console.log("Connecting to Mega succeeded.");
             } catch(e){ 
                 console.log(e);
@@ -122,13 +121,9 @@ async function main(webContents:Electron.WebContents) {
 
     promiseIpc.on("requestFolders", async ()=>{
         const displayedFiles=await handleStorages();
-        promiseIpc.on("action", (folder:unknown, name:unknown, action:unknown, event?: IpcMainEvent)=>{
-            console.log(`Received action ${action} for '${folder}/${name}'`);
-        });
 
         return displayedFiles;
     });
-    
     
 }
 
@@ -169,6 +164,7 @@ function createMainWindow(): BrowserWindow {
     });
     
     main(window.webContents);
+    // promiseIpc.on("requestFolders", handleStorages);
 
     return window;
 }

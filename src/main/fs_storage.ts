@@ -29,11 +29,11 @@ export default class FsStorage implements Storage {
                         const fullFileName=join(categoryPath, file);
                         try {
                             const date=(await statPromise(fullFileName)).mtime;
-                            return new FileOrFolder(basename(file, extname(file)), fullFileName, date);
+                            return new FileOrFolder(file, fullFileName, date);
                         } catch(err){
                             // stat error, print it and use current Date
                             console.log(err);
-                            return new FileOrFolder(basename(file, extname(file)), fullFileName, new Date());
+                            return new FileOrFolder(file, fullFileName, new Date());
                         }
                     }));
                     result.set(category, filesData);

@@ -15,36 +15,50 @@ export default class MegajsStorage implements Storage {
     rootFolder: MutableFile|null=null;
     categories:Map<string, MutableFile>=new Map<string, MutableFile>();
     
-    download(category:string, file:string){
-        this.categories.get(category)?.children.find(megaFile=>megaFile.name==file)?.download().pipe(fs.createWriteStream(join(LOCAL_PATH, category, file)));
+    download(category:string, file:string):Promise<void>{
+        return new Promise<void>((resolve, reject) =>{
+            const folder=this.categories.get(category);
+            if(!folder){
+                throw new Error("There is no folder to download from.");
+            }
+            const megaFile=folder.children.find(megaFile=>megaFile.name==file);
+            if(!megaFile){
+                throw new Error("There is no file that was supposed to be downloaded.");
+            }
+            megaFile.download().pipe(fs.createWriteStream(join(LOCAL_PATH, category, file))).on('finish', resolve);
+        });
     }
 
     async upload(category:string, file:string){
-        if(this.rootFolder==null){
-            throw new Error("You must call connect before upload.");
-        }
-        let folder=this.categories.get(category);
-        if(!folder){
-            // if category folder does not exist create it
-            this.rootFolder.mkdir(category);
-            folder=<MutableFile>this.rootFolder.children.find(f=>f.name==category);
-            this.categories.set(category, folder);
-        }
-        const megaFile=folder?.children.find(megaFile=>megaFile.name==file);
-        if(megaFile){
-            // delete previous file 
-            (<MutableFile>megaFile).delete(true, (error)=>{throw error});
-        }
-        // upload current file 
-        fs.createReadStream(join(LOCAL_PATH, category, file)).pipe(folder.upload(file));
+        return new Promise<void>((resolve, reject) =>{
+            if(this.rootFolder==null){
+                throw new Error("You must call connect before upload.");
+            }
+            let folder=this.categories.get(category);
+            if(!folder){
+                // if category folder does not exist create it
+                this.rootFolder.mkdir(category);
+                folder=<MutableFile>this.rootFolder.children.find(f=>f.name==category);
+                this.categories.set(category, folder);
+            }
+            const megaFile=folder?.children.find(megaFile=>megaFile.name==file);
+            if(megaFile){
+                // delete previous file 
+                (<MutableFile>megaFile).delete(true, (error)=>{throw error});
+            }
+            // upload current file 
+            fs.createReadStream(join(LOCAL_PATH, category, file)).pipe(folder.upload(file)).on('finish', resolve);
+        });
     }
 
     connect():Promise<void>{
         return new Promise((resolve, reject)=>{
             try {
-                this.storage = new MegajsPackageStorage(credentials, resolve);
-                const rootFolder=this.storage.root.children.find(f=>f.nodeId==ROOT_FOLDER_ID);
-                this.rootFolder=<MutableFile>rootFolder;
+                this.storage = new MegajsPackageStorage(credentials, ()=>{
+                    const rootFolder=this.storage?.root.children.find(f=>f.nodeId==ROOT_FOLDER_ID);
+                    this.rootFolder=<MutableFile>rootFolder;
+                    resolve();
+                });
             } catch(err) {
                 reject(err);
             }
@@ -72,11 +86,12 @@ export default class MegajsStorage implements Storage {
 
                     CATEGORIES.forEach(category=>{
                         const category_folder=rootFolder.children.find(f=>f.name==category);
+                        this.categories.set(category, <MutableFile>category_folder);
 
                         if(category_folder!=undefined && category_folder.children!=undefined){
                             result.set(category, category_folder.children.map(
                                 f=>new FileOrFolder(
-                                    basename(f.name, extname(f.name)), 
+                                    f.name, 
                                     "https://mega.nz/fm/"+f.nodeId, 
                                     new Date(f.timestamp*1000))));
                         } else {

@@ -50,7 +50,7 @@ export async function createDisplayedFolders(localFiles: FilesStructure, remoteF
         if(localCategoryFiles!=undefined){
             for(let file of localCategoryFiles){
                 // file is in local storage
-                const displayedFile=new DisplayedFile(file.name, "", "", file.mdate, ["Train", "Upload", "Download"]);
+                const displayedFile=new DisplayedFile(file.name, "", "", file.mdate, ["Train", "Upload"]);
                 promises.push(base64_encode(file.path).then(encodedImage=>displayedFile.image=encodedImage));
                 categoryMap.set(file.name, displayedFile);
             }

@@ -31,26 +31,20 @@ class Page extends React.Component {
         this.goThroughLoginProcess();
     }
 
-    setSelectedFolder(index) {
-        this.setState(state=>({...state, selectedFolder:index}));
+    setSelectedFolder(folder) {
+        this.setState(state=>({...state, selectedFolder:folder}));
+        return true;
     }
 
     async goThroughLoginProcess() {
         this.passwordDialog.current.open();
         this.loadFolders();
-        /* promiseIpc.on("requestPassword", ()=>this.passwordDialog.current.open());
-        promiseIpc.on("requestPasswordAgain", ()=>this.passwordDialog.current.open(true));
-        
-        promiseIpc.on("requestNewPassword", ()=>);
+    }
 
-        promiseIpc.on("requestMegaCredentials", ()=>this.loginDialog.current.open());
-        promiseIpc.on("requestMegaCredentialsAgain", ()=>this.loginDialog.current.open(true));
-
-        console.log("Requesting settings loading.");
-        await promiseIpc.send("loadSettings", 1);
-        console.log("Requesting connecting to mega.");
-        await promiseIpc.send("connectToMega", 1);
-        this.loadFolders(); */
+    async settingsLoaded(){
+        if(! await promiseIpc.send("connectToRemote", null)){
+            this.loginDialog.current.open();
+        }
     }
 
     async loadFolders(){
@@ -88,9 +82,15 @@ class Page extends React.Component {
     async onPasswordInput(password){
         if(await promiseIpc.send("password", password)){
             this.passwordDialog.current.close();
+            this.settingsLoaded();
         } else {
             this.passwordDialog.current.setError();
         }
+    }
+
+    async onNewPasswordInput(password){
+        await promiseIpc.send("newPassword", password);
+        this.settingsLoaded();
     }
     
     render() {
@@ -105,8 +105,8 @@ class Page extends React.Component {
                     changeCallback={this.switchToSettingPassword.bind(this)} />
                 <SetPasswordDialog 
                     ref={this.setPasswordDialog} 
-                    callback={password=>promiseIpc.send("newPassword", password)} />
-                <LoginDialog ref={this.loginDialog} callback={credentials=>promiseIpc.send("megaCredentials", credentials)} />
+                    callback={this.onNewPasswordInput.bind(this)} />
+                <LoginDialog ref={this.loginDialog} callback={credentials=>promiseIpc.send("connectToRemote", credentials)} />
                 <Sidebar callback={this.setSelectedFolder.bind(this)} selectedFolder={this.state.selectedFolder} />
                 <main className={classes.content}>
                     <Toolbar />

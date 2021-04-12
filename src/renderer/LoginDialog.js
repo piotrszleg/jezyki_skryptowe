@@ -33,6 +33,13 @@ export default class FormDialog extends React.Component {
         }));
     }
 
+    open() {
+        this.setState(state => ({
+            ...state,
+            open: true
+        }));
+    }
+
     setEmail(event) {
         this.setState((state) => ({ ...state, email: event.target.value }));
     }
@@ -53,7 +60,7 @@ export default class FormDialog extends React.Component {
                 TransitionComponent={Transition}
                 keepMounted
             >
-                <DialogTitle id="form-dialog-title">Login</DialogTitle>
+                <DialogTitle id="form-dialog-title">Login to remote drive</DialogTitle>
                 <DialogContent>
                     <DialogContentText>{this.props.reason}</DialogContentText>
                     <TextField

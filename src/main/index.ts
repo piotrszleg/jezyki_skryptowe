@@ -86,60 +86,34 @@ async function main(webContents:Electron.WebContents) {
         return true;
     });
 
+    interface Credentials {
+        email:string;
+        password:string;
+        save:boolean;
+    }
 
-    promiseIpc.on("loadSettings", (event?: IpcMainEvent)=>{
-        if(settings.databaseExists()) {
-            console.log("Requesting database password.");
-            promiseIpc.on("password", (password:unknown, event?: IpcMainEvent)=>{
-                try {
-                    settings.connectToDatabase(<string>password);
-                    console.log("Password is valid.");
-                    promiseIpc.send("connectedToSettingsDatabase", webContents);
-                } catch(e) {
-                    console.log(e);
-                    console.log("Password is invalid.");
-                    promiseIpc.send("requestPasswordAgain", webContents);
-                }
-            });
-            promiseIpc.send("requestPassword", webContents);
-        } else {
-            console.log("There is no database, requesting new password.");
-            promiseIpc.on("newPassword", (password:unknown, event?: IpcMainEvent)=>{
-                console.log("Changing database password to one provided.");
-                settings.createDatabase(<string>password);
-                promiseIpc.send("connectedToSettingsDatabase", webContents);
-            });
-            promiseIpc.send("requestNewPassword", webContents);
-        }
-    });
-    promiseIpc.on("connectToMega", async (event?:IpcMainEvent)=>{
-        // const megaStorage=new MegajsStorage();
-        let firstTry=true;
-
-        interface Credentials {
-            email:string;
-            password:string;
-        }
-
-        async function connectToMegaUsingCredentials(credentials:Credentials|null){
-            try {
-                if(credentials){
+    async function connectToRemote(credentials:Credentials|null){
+        try {
+            if(credentials){
+                console.log("Trying to connect to mega using sent credentials.");
+                if(credentials.save){
                     settings.megaEmail=credentials.email;
                     settings.megaPassword=credentials.password;
                 }
-                // await megaStorage.connect();
                 console.log("Connecting to Mega succeeded.");
-            } catch(e){ 
-                console.log(e);
-                promiseIpc.send(firstTry ? "requestMegaCredentials" : "requestMegaCredentialsAgain", webContents);
-                firstTry=false;
+                return true;
+            } else {
+                console.log("Trying to connect to mega using saved credentials.");
                 console.log("Connecting to Mega failed.");
+                return false;
             }
+        } catch(e){
+            console.log("Connecting to Mega failed.");
+            console.log(e);
+            return false;
         }
-        console.log("Trying to connect to mega using saved credentials.");
-        connectToMegaUsingCredentials(null);
-        promiseIpc.on("megaCredentials", (credentials:any, event?:IpcMainEvent)=>connectToMegaUsingCredentials(credentials));
-    });
+    }
+    promiseIpc.on("connectToRemote", (credentials:any, event?:IpcMainEvent)=>connectToRemote(credentials));
 
     promiseIpc.on("requestFolders", async ()=>{
         const displayedFiles=await handleStorages();

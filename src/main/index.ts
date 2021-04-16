@@ -3,7 +3,7 @@
 import { join } from "path";
 import { format as formatUrl } from "url";
 import FsStorage from "./fs_storage";
-import MegajsStorage from "./mega_storage";
+import {MegajsStorage, MegaJsStorageCredentials} from "./mega_storage";
 import Storage from "./storage_";
 import { app, BrowserWindow, Notification, IpcMainEvent } from "electron";
 import { FilesStructure } from "./file_commons";
@@ -24,35 +24,20 @@ function notify(title:string, message:string){
     new Notification(notification).show();
 }
 
-async function handleStorage(storage:Storage, showNotifications:Boolean=true):Promise<FilesStructure>{
+async function handleStorage(storage:Storage<any>, showNotifications:Boolean=true):Promise<FilesStructure>{
     if(showNotifications){
         storage.onChange(message => notify("Changes on drive", message));
     }
+    promiseIpc.on("action", (folder:unknown, name:unknown, action:unknown, event?: IpcMainEvent)=>{
+        console.log(`Received action ${action} for '${folder}/${name}'`);
+        return storage.handleAction(<string>action, <string>folder, <string>name);
+    });
     const folders=await storage.getFolders();
     console.log(folders);
     return folders;
 }
 
-async function handleStorages():Promise<DisplayedFilesStructure> {
-    const megaStorage=new MegajsStorage();
-
-    await megaStorage.connect();
-    promiseIpc.on("action", async (folder:unknown, name:unknown, action:unknown, event?: IpcMainEvent)=>{
-            console.log(`Received action ${action} for '${folder}/${name}'`);
-            if(action=="Upload"){
-                await megaStorage.upload(<string>folder, <string>name);
-                return true;
-            } else if (action=="Download"){
-                await megaStorage.download(<string>folder, <string>name);
-                return true;
-            } else {
-                return false;
-            }
-    });
-
-    const fsStorage=new FsStorage();
-    await fsStorage.connect();
-
+async function handleStorages(fsStorage:FsStorage, megaStorage:MegajsStorage):Promise<DisplayedFilesStructure> {
     const [localFiles, remoteFiles] = 
         await Promise.all(
         [handleStorage(fsStorage, false),
@@ -64,8 +49,6 @@ async function handleStorages():Promise<DisplayedFilesStructure> {
 }
 
 async function main(webContents:Electron.WebContents) {
-
-    
     const settings = new Settings();
 
     promiseIpc.on("password", async (password:unknown, event?: IpcMainEvent)=>{
@@ -86,41 +69,50 @@ async function main(webContents:Electron.WebContents) {
         return true;
     });
 
-    interface Credentials {
+    interface CredentialsFormData {
         email:string;
         password:string;
         save:boolean;
     }
 
-    async function connectToRemote(credentials:Credentials|null){
-        try {
-            if(credentials){
-                console.log("Trying to connect to mega using sent credentials.");
-                if(credentials.save){
-                    settings.megaEmail=credentials.email;
-                    settings.megaPassword=credentials.password;
-                }
-                console.log("Connecting to Mega succeeded.");
-                return true;
-            } else {
-                console.log("Trying to connect to mega using saved credentials.");
-                console.log("Connecting to Mega failed.");
-                return false;
+    const megaStorage=new MegajsStorage();
+    const fsStorage=new FsStorage();
+    fsStorage.connect();
+
+    async function connectToRemote(formData:CredentialsFormData|null){
+        const credentials=new MegaJsStorageCredentials("", "");
+        if(formData){
+            console.log("Trying to connect to mega using sent credentials.");
+            if(formData.save){
+                settings.megaEmail=formData.email;
+                settings.megaPassword=formData.password;
             }
-        } catch(e){
+            credentials.email=formData.email;
+            credentials.password=formData.password;
+        } else {
+            console.log("Trying to connect to mega using saved credentials.");
+            credentials.email=settings.megaEmail;
+            credentials.password=settings.megaPassword;
+        }
+
+        try {
+            await megaStorage.connect(new MegaJsStorageCredentials(credentials.email, credentials.password));
+            console.log("Connecting to Mega succeeded.");
+
+            promiseIpc.on("requestFolders", async ()=>{
+                const displayedFiles=await handleStorages(fsStorage, megaStorage);
+        
+                return displayedFiles;
+            });
+
+            return true;
+        } catch(err){
             console.log("Connecting to Mega failed.");
-            console.log(e);
+            console.log(err);
             return false;
         }
     }
     promiseIpc.on("connectToRemote", (credentials:any, event?:IpcMainEvent)=>connectToRemote(credentials));
-
-    promiseIpc.on("requestFolders", async ()=>{
-        const displayedFiles=await handleStorages();
-
-        return displayedFiles;
-    });
-    
 }
 
 function createMainWindow(): BrowserWindow {

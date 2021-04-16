@@ -59,6 +59,9 @@ export default class Settings {
         }
         this.db = await connectToDatabase(password);
         this.document = await this.db.insert({ type: "settings" });
+        if(!this.document){
+            console.log("dupa1");
+        }
     }
     databaseExists() {
         return fs.existsSync(DB_PATH);
@@ -67,6 +70,9 @@ export default class Settings {
         return this.document.megaEmail;
     }
     set megaEmail(email) {
+        if(!this.document){
+            console.log("dupa2");
+        }
         this.document.megaEmail = email;
         this.db.update({ type: "settings" }, this.document);
     }

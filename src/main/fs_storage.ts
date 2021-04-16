@@ -10,7 +10,10 @@ export const LOCAL_PATH = "E:/jezyki_skryptowe";
 const readdirPromise = promisify(fs.readdir);
 const statPromise = promisify(fs.stat);
 
-export default class FsStorage implements Storage {
+export default class FsStorage implements Storage<void> {
+    async handleAction(action:string){
+        return false;
+    }
     connect():Promise<void>{
         return new Promise((resolve, reject)=>resolve());
     }

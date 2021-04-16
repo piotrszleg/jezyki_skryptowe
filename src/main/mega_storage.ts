@@ -10,19 +10,46 @@ import fs from "fs";
 
 const ROOT_FOLDER_ID="MOp01QxZ";
 
-export default class MegajsStorage implements Storage {
+export class MegaJsStorageCredentials {
+    email:string;
+    password:string;
+    constructor(email:string, password:string){
+        this.email = email;
+        this.password=password;
+    }
+};
+
+export class MegajsStorage implements Storage<MegaJsStorageCredentials> {
     storage: MegajsPackageStorage|null=null;
     rootFolder: MutableFile|null=null;
     categories:Map<string, MutableFile>=new Map<string, MutableFile>();
 
-    connect():Promise<void>{
+    async handleAction(action:string, folder:string, name:string){
+        if(action=="Upload"){
+            await this.upload(<string>folder, <string>name);
+            return true;
+        } else if (action=="Download"){
+            await this.download(<string>folder, <string>name);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    connect(credentials:MegaJsStorageCredentials):Promise<void>{
         return new Promise((resolve, reject)=>{
             try {
                 this.storage = new MegajsPackageStorage(credentials, (error:string|null)=>{
                     if(error){
                         reject(error);
                     }
-                    const rootFolder=this.storage?.root.children.find(f=>f.nodeId==ROOT_FOLDER_ID);
+                    if(!this.storage?.root?.children){
+                        reject("There is no storage root.");
+                    }
+                    const rootFolder=this.storage?.root?.children.find(f=>f.nodeId==ROOT_FOLDER_ID);
+                    if(!rootFolder){
+                        reject("Root folder id must be invalid.");
+                    }
                     this.rootFolder=<MutableFile>rootFolder;
                     resolve();
                 });

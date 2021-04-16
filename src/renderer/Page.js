@@ -38,7 +38,6 @@ class Page extends React.Component {
 
     async goThroughLoginProcess() {
         this.passwordDialog.current.open();
-        this.loadFolders();
     }
 
     async settingsLoaded(){
@@ -92,6 +91,15 @@ class Page extends React.Component {
         await promiseIpc.send("newPassword", password);
         this.settingsLoaded();
     }
+
+    async onLoginData(credentials){
+        if(await promiseIpc.send("connectToRemote", credentials)){
+            this.loadFolders();
+        } else {
+            // try again 
+            this.loginDialog.current.open();
+        }
+    }
     
     render() {
         const { classes } = this.props;
@@ -106,7 +114,7 @@ class Page extends React.Component {
                 <SetPasswordDialog 
                     ref={this.setPasswordDialog} 
                     callback={this.onNewPasswordInput.bind(this)} />
-                <LoginDialog ref={this.loginDialog} callback={credentials=>promiseIpc.send("connectToRemote", credentials)} />
+                <LoginDialog ref={this.loginDialog} callback={this.onLoginData.bind(this)} />
                 <Sidebar callback={this.setSelectedFolder.bind(this)} selectedFolder={this.state.selectedFolder} />
                 <main className={classes.content}>
                     <Toolbar />

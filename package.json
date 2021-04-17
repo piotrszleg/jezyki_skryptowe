@@ -22,7 +22,8 @@
     "nedb": "^1.8.0",
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
-    "source-map-support": "^0.5.16"
+    "source-map-support": "^0.5.16",
+    "util.promisify": "^1.1.1"
   },
   "devDependencies": {
     "@babel/preset-react": "^7.12.13",
@@ -30,6 +31,7 @@
     "@types/megajs": "^0.14.1",
     "@types/nedb": "^1.8.11",
     "@types/node": "12",
+    "@types/util.promisify": "^1.0.4",
     "@types/webpack-env": "1.15.3",
     "electron": "8.2.0",
     "electron-builder": "^22.4.1",

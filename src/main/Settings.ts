@@ -39,13 +39,27 @@ function connectToDatabase(secret: string) {
     });
 }
 
+function promisify(fThis:any, f:any){
+    return function(...args: any[]){
+        return new Promise((resolve, reject)=>{
+            f.call(fThis, ...args, (error:string, value:any)=>{
+                if(error){
+                    reject(error);
+                } else {
+                    resolve(value);
+                }
+            });
+        })
+    }
+}
+
 export default class Settings {
     db: typeof Datastore;
     document: any;
     async connectToDatabase(password: string) {
         try {
             this.db = await connectToDatabase(password);
-            this.document = await this.db.findOne({ type: "settings" });
+            this.document = await promisify(this.db, this.db.findOne)({ type: "settings" });
             if (this.document == null) {
                 throw new Error("Incorrect password.");
             }
@@ -53,34 +67,34 @@ export default class Settings {
             throw new Error("Incorrect password.");
         }
     }
+
     async createDatabase(password: string) {
         if(this.databaseExists()){
             fs.unlinkSync(DB_PATH);
         }
         this.db = await connectToDatabase(password);
-        this.document = await this.db.insert({ type: "settings" });
-        if(!this.document){
-            console.log("dupa1");
-        }
+        this.document = await (promisify(this.db, this.db.insert.bind)({ type: "settings" }));
     }
     databaseExists() {
         return fs.existsSync(DB_PATH);
+    }
+    async save(){
+        this.db.update({ type: "settings" }, this.document);
+        console.log("Settings updated, current state:");
+        console.log(await promisify(this.db, this.db.findOne)({ type: "settings" }));
     }
     get megaEmail() {
         return this.document.megaEmail;
     }
     set megaEmail(email) {
-        if(!this.document){
-            console.log("dupa2");
-        }
         this.document.megaEmail = email;
-        this.db.update({ type: "settings" }, this.document);
+        this.save();
     }
     get megaPassword() {
         return this.document.megaPassword;
     }
     set megaPassword(password) {
         this.document.password = password;
-        this.db.update({ type: "settings" }, this.document);
+        this.save();
     }
 }

@@ -11,6 +11,7 @@
   "dependencies": {
     "@material-ui/core": "^4.11.3",
     "@material-ui/icons": "^4.11.2",
+    "archiver": "^5.3.0",
     "crypto": "^1.0.1",
     "electron-promise-ipc": "^2.2.4",
     "fs": "^0.0.1-security",
@@ -25,6 +26,7 @@
   },
   "devDependencies": {
     "@babel/preset-react": "^7.12.13",
+    "@types/archiver": "^5.1.0",
     "@types/megajs": "^0.14.1",
     "@types/nedb": "^1.8.11",
     "@types/node": "12",

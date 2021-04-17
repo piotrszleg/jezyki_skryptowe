@@ -12,7 +12,7 @@ export const styles =  ({
     drawer: {
         width: drawerWidth,
         flexShrink: 0,
-        zIndex:  - 1,
+        zIndex:  1000,
     },
     drawerPaper: {
         width: drawerWidth,

@@ -19,7 +19,8 @@ class Page extends React.Component {
         this.state={
             folders:null,
             selectedFolder:"datasets",
-            classes:{}
+            classes:{},
+            inSettings:false
         }
         this.passwordDialog=React.createRef();
         this.setPasswordDialog=React.createRef();
@@ -32,7 +33,7 @@ class Page extends React.Component {
     }
 
     setSelectedFolder(folder) {
-        this.setState(state=>({...state, selectedFolder:folder}));
+        this.setState(state=>({...state, selectedFolder:folder, inSettings:false}));
         return true;
     }
 
@@ -100,6 +101,10 @@ class Page extends React.Component {
             this.loginDialog.current.open();
         }
     }
+
+    switchToSettings(){
+        this.setState(state=>({...state, inSettings:true}));
+    }
     
     render() {
         const { classes } = this.props;
@@ -115,12 +120,13 @@ class Page extends React.Component {
                     ref={this.setPasswordDialog} 
                     callback={this.onNewPasswordInput.bind(this)} />
                 <LoginDialog ref={this.loginDialog} callback={this.onLoginData.bind(this)} />
-                <Sidebar callback={this.setSelectedFolder.bind(this)} selectedFolder={this.state.selectedFolder} />
+                <Sidebar folderCallback={this.setSelectedFolder.bind(this)} selectedFolder={this.state.selectedFolder} inSettings={this.state.inSettings} settingsCallback={this.switchToSettings.bind(this)}/>
                 <main className={classes.content}>
                     <Toolbar />
-                    {1 
-                    ? <Thumbnails folders={this.getItemsList()} actionCallback={(name, action)=>this.sendAction(this.state.selectedFolder, name, action)} />
-                    : <Settings />}
+                    {this.state.inSettings
+                    ? <Settings />
+                    : <Thumbnails folders={this.getItemsList()} actionCallback={(name, action)=>this.sendAction(this.state.selectedFolder, name, action)} />
+                    }
                 </main>
             </div>
         );

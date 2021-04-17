@@ -1,6 +1,5 @@
 import * as fs from "fs";
 import {promisify} from "util";
-import {basename, extname} from "path";
 import {CATEGORIES, FileOrFolder, FilesStructure} from "./file_commons";
 import { join } from "path";
 import Storage from "./storage_";
@@ -28,17 +27,23 @@ export default class FsStorage implements Storage<void> {
                 async category=>{
                     const categoryPath=join(LOCAL_PATH, category)
                     const files=await readdirPromise(categoryPath);
-                    const filesData:FileOrFolder[]=await Promise.all(files.map(async (file:string)=>{
+                    const filesData:FileOrFolder[]=<FileOrFolder[]>(await Promise.all(files.map(async (file:string)=>{
                         const fullFileName=join(categoryPath, file);
+                        let stats;
                         try {
-                            const date=(await statPromise(fullFileName)).mtime;
-                            return new FileOrFolder(file, fullFileName, date);
+                            stats=await statPromise(fullFileName);
                         } catch(err){
-                            // stat error, print it and use current Date
+                            // stat error, print it and skip file
                             console.log(err);
-                            return new FileOrFolder(file, fullFileName, new Date());
+                            return null;
                         }
-                    }));
+                        if(stats.isDirectory()){
+                            // list only directories
+                            return new FileOrFolder(file, fullFileName, stats.mtime);
+                        } else {
+                            return null;
+                        }
+                    }))).filter(e=>e!=null);
                     result.set(category, filesData);
                 }
             )).then(()=>resolve(result));

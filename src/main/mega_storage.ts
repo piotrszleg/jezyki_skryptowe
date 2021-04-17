@@ -1,12 +1,11 @@
-import credentials from "./mega_credentials";
-import { Storage as MegajsPackageStorage, File, MutableFile } from 'megajs';
+import { Storage as MegajsPackageStorage, MutableFile } from 'megajs';
 import {CATEGORIES, FileOrFolder, FilesStructure} from "./file_commons";
-import {basename, extname} from "path";
 import {EventEmitter} from "events";
 import Storage from "./storage_";
 import { LOCAL_PATH } from "./fs_storage";
 import { join } from "path";
 import fs from "fs";
+import archiver from "archiver";
 
 const ROOT_FOLDER_ID="MOp01QxZ";
 
@@ -85,13 +84,47 @@ export class MegajsStorage implements Storage<MegaJsStorageCredentials> {
                 folder=<MutableFile>this.rootFolder.children.find(f=>f.name==category);
                 this.categories.set(category, folder);
             }
-            const megaFile=folder?.children.find(megaFile=>megaFile.name==file);
-            if(megaFile){
-                // delete previous file 
-                (<MutableFile>megaFile).delete(true, (error)=>{throw error});
+
+            let counter=0;
+            function onFinish(){
+                counter--;
+                if(counter<=0){
+                    resolve();
+                }
             }
-            // upload current file 
-            fs.createReadStream(join(LOCAL_PATH, category, file)).pipe(folder.upload(file)).on('finish', resolve);
+
+            function deleteRemoteFile(file:string){
+                const megaFile=folder?.children.find(megaFile=>megaFile.name==file);
+                if(megaFile){
+                    counter++;
+                    // delete previous file 
+                    (<MutableFile>megaFile).delete(true, (error)=>{if(error)throw error; else onFinish()});
+                }
+            }
+            deleteRemoteFile(file);
+            deleteRemoteFile(file+".txt");
+            deleteRemoteFile(file+".png");
+            deleteRemoteFile(file+".jpeg");
+            deleteRemoteFile(file+".jpg");
+            const archive = archiver('zip', {
+                zlib: { level: 9 } // Sets the compression level.
+            });
+            
+            // upload current zipped directory 
+            counter++;
+            archive.directory(join(LOCAL_PATH, category, file), false).pipe(folder.upload(file)).on('finish', onFinish);
+            // upload thumbnail 
+            function uploadFileIfExists(file:string){
+                const path=join(LOCAL_PATH, category, file);
+                if(folder && fs.existsSync(path)){
+                    counter++;
+                    fs.createReadStream(path).pipe(folder.upload(file)).on('finish', onFinish);
+                }
+            }
+            uploadFileIfExists(file+".txt");
+            uploadFileIfExists(file+".png");
+            uploadFileIfExists(file+".jpeg");
+            uploadFileIfExists(file+".jpg");
         });
     }
     onChange(callback: (messege : string)=>void){

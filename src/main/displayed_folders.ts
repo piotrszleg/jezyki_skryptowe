@@ -23,7 +23,7 @@ class DisplayedFile {
 
 export type DisplayedFilesStructure = Map<string, DisplayedFile[]>;
 
-async function base64_encode(file:string) {
+async function base64Encode(file:string) {
     try {
         if(fs.statSync(file).isFile()){
             const image = await Jimp.read(fs.readFileSync(file));
@@ -35,9 +35,25 @@ async function base64_encode(file:string) {
     } catch(err){
         console.log("Error while processing image %s:\n%s", file, err);
     }
-    return "";
+    return null;
 }
 
+async function getThumbnail(file:string){
+    return <string>(await Promise.all([".png", ".jpeg", "jpg"]
+        // try encoding the image to base64
+        .map(async ext=>await base64Encode(file+ext))))
+        // return first success
+        .reduce((prev, curr)=>curr ? curr : prev);
+}
+
+function getDescription(file:string) {
+    const path = file+".txt";
+    if(fs.existsSync(path) && fs.statSync(path).isFile()){
+        return fs.readFileSync(path).toString();
+    } else {
+        return "";
+    }
+}
 
 export async function createDisplayedFolders(localFiles: FilesStructure, remoteFiles: FilesStructure) : Promise<DisplayedFilesStructure> {
     const result=new Map<string, DisplayedFile[]>();
@@ -50,8 +66,8 @@ export async function createDisplayedFolders(localFiles: FilesStructure, remoteF
         if(localCategoryFiles!=undefined){
             for(let file of localCategoryFiles){
                 // file is in local storage
-                const displayedFile=new DisplayedFile(file.name, "", "", file.mdate, ["Train", "Upload"]);
-                promises.push(base64_encode(file.path).then(encodedImage=>displayedFile.image=encodedImage));
+                const displayedFile=new DisplayedFile(file.name, getDescription(file.path), "", file.mdate, ["Train", "Upload"]);
+                promises.push(getThumbnail(file.path).then(encodedImage=>displayedFile.image=encodedImage));
                 categoryMap.set(file.name, displayedFile);
             }
         }

@@ -13,6 +13,7 @@ import SettingsIcon from "@material-ui/icons/Settings";
 import HelpOutlineIcon from "@material-ui/icons/HelpOutline";
 import { getClasses } from "./style.js";
 import Toolbar from "@material-ui/core/Toolbar";
+const { shell } = require('electron')
 
 export default function Sidebar(props) {
     const classes = getClasses();
@@ -38,7 +39,7 @@ export default function Sidebar(props) {
                     <ListItem button 
                             key={index}
                             selected={props.selectedFolder==name.toLowerCase()} 
-                            onClick={() => props.callback(name.toLowerCase())}>
+                            onClick={() => props.folderCallback(name.toLowerCase())}>
                         <ListItemIcon>
                             {icon()}
                         </ListItemIcon>
@@ -48,13 +49,16 @@ export default function Sidebar(props) {
                 </List>
                 <Divider />
                 <List>
-                <ListItem button>
+                <ListItem button
+                    selected={props.inSettings}
+                    onClick={props.settingsCallback}>
                         <ListItemIcon>
                             <SettingsIcon />
                         </ListItemIcon>
                         <ListItemText primary="Settings" />
                     </ListItem>
-                    <ListItem button>
+                    <ListItem button
+                    onClick={()=>shell.openExternal('https://github.com/piotrszleg/jezyki_skryptowe#readme')}>
                         <ListItemIcon>
                             <HelpOutlineIcon />
                         </ListItemIcon>

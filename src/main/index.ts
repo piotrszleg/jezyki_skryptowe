@@ -33,7 +33,7 @@ async function handleStorage(storage:Storage<any>, showNotifications:Boolean=tru
         return storage.handleAction(<string>action, <string>folder, <string>name);
     });
     const folders=await storage.getFolders();
-    console.log(folders);
+    // console.log(folders);
     return folders;
 }
 
@@ -41,10 +41,10 @@ async function handleStorages(fsStorage:FsStorage, megaStorage:MegajsStorage):Pr
     const [localFiles, remoteFiles] = 
         await Promise.all(
         [handleStorage(fsStorage, false),
-        handleStorage(megaStorage) ]);
+        handleStorage(megaStorage, false) ]);
 
     const displayedFiles=await createDisplayedFolders(localFiles, remoteFiles);
-    console.log(displayedFiles);
+    // console.log(displayedFiles);
     return displayedFiles;
 }
 
@@ -72,6 +72,14 @@ async function main(webContents:Electron.WebContents) {
     promiseIpc.on("getSettings", ()=>settings.getRaw());
     promiseIpc.on("setSettings", (value:any)=>settings.update(value));
     promiseIpc.on("resetSettings", (value:any)=>settings.reset());
+    promiseIpc.on("relaunch", (value:any)=>{
+        if(app.isPackaged){
+            app.relaunch({ args: process.argv.slice(1).concat(['--relaunch']) });
+            app.exit(0);
+        } else {
+            console.log("Relaunch isn't available in dev mode.")
+        }
+    });
 
     interface CredentialsFormData {
         email:string;

@@ -6,6 +6,7 @@ import { LOCAL_PATH } from "./fs_storage";
 import { join } from "path";
 import fs from "fs";
 import archiver from "archiver";
+import unzipper from "unzipper";
 
 const ROOT_FOLDER_ID="MOp01QxZ";
 
@@ -17,6 +18,42 @@ export class MegaJsStorageCredentials {
         this.password=password;
     }
 };
+
+function mapFilter<S, R>(collection:readonly S[], f:(element:S)=>(R|null)){
+    const result=[];
+    for(const element of collection){
+        const fResult=f(element);
+        if(fResult!=null){
+            result.push(fResult);
+        }
+    }
+    return result;
+}
+
+const throwIfError=(error:any)=>{if(error){throw error;}};
+
+class Resolver {
+    counter=0;
+    callback:()=>void;
+    resolve:()=>void;
+    borrow(){
+        this.counter++;
+    }
+    finishBorrowing(){
+        if(this.counter<=0){
+            this.resolve();
+        }
+    }
+    constructor(resolve:()=>void){
+        this.resolve=resolve;
+        this.callback=()=>{
+            this.counter--;
+            if(this.counter<=0){
+                this.resolve();
+            }
+        }
+    }
+}
 
 export class MegajsStorage implements Storage<MegaJsStorageCredentials> {
     storage: MegajsPackageStorage|null=null;
@@ -64,11 +101,68 @@ export class MegajsStorage implements Storage<MegaJsStorageCredentials> {
             if(!folder){
                 throw new Error("There is no folder to download from.");
             }
-            const megaFile=folder.children.find(megaFile=>megaFile.name==file);
+            const megaFile=folder.children.find(megaFile=>megaFile.name==file+".zip");
             if(!megaFile){
                 throw new Error("There is no file that was supposed to be downloaded.");
             }
-            megaFile.download().pipe(fs.createWriteStream(join(LOCAL_PATH, category, file))).on('finish', resolve);
+
+            const localPath=join(LOCAL_PATH, category, file);
+
+            function deleteOldFiles(resolver:Resolver){
+                console.log("Started deleting old files");
+                function deleteLocalFile(file:string){
+                    if(fs.existsSync(file)){
+                        resolver.borrow();
+                        fs.unlink(file, resolver.callback);
+                    }
+                }
+                if(fs.existsSync(localPath)){
+                    resolver.borrow();
+                    fs.rmdir(localPath, { recursive: true }, resolver.callback);
+                }
+                deleteLocalFile(localPath+".txt");
+                deleteLocalFile(localPath+".png");
+                deleteLocalFile(localPath+".jpeg");
+                deleteLocalFile(localPath+".jpg");
+                resolver.finishBorrowing();
+            }
+
+            const deleteResolver=new Resolver(()=>{
+                console.log("Finished deleting old files");
+                
+                const zipPath=localPath+".zip";
+
+                const resolver=new Resolver(()=>{
+                    console.log("Finished downloading "+file);
+                    resolve();
+                });
+
+                resolver.borrow();
+                megaFile.download().pipe(fs.createWriteStream(zipPath)).on('finish', ()=>{
+                    console.log("Finished writing to temp zip file "+zipPath);
+                    fs.createReadStream(zipPath)
+                        .pipe(unzipper.Extract({ path: localPath })).on('finish', ()=>{
+                            fs.unlink(zipPath, throwIfError);
+                            resolver.callback();
+                        });
+                });
+
+                function downloadFile(file:string){
+                    const megaFile=folder?.children.find(megaFile=>megaFile.name==file);
+                    if(megaFile){
+                        resolver.borrow();
+                        megaFile.download().pipe(fs.createWriteStream(join(LOCAL_PATH, category, file))).on('finish', resolver.callback);
+                    }
+                }
+                
+                downloadFile(file+".txt");
+                downloadFile(file+".png");
+                downloadFile(file+".jpeg");
+                downloadFile(file+".jpg");
+                resolver.finishBorrowing();
+            });
+
+            deleteOldFiles(deleteResolver);
         });
     }
 
@@ -85,23 +179,20 @@ export class MegajsStorage implements Storage<MegaJsStorageCredentials> {
                 this.categories.set(category, folder);
             }
 
-            let counter=0;
-            function onFinish(){
-                counter--;
-                if(counter<=0){
-                    resolve();
-                }
-            }
+            const resolver=new Resolver(()=>{
+                console.log("Finished uploading "+file);
+                resolve();
+            });
 
             function deleteRemoteFile(file:string){
                 const megaFile=folder?.children.find(megaFile=>megaFile.name==file);
                 if(megaFile){
-                    counter++;
+                    resolver.borrow();
                     // delete previous file 
-                    (<MutableFile>megaFile).delete(true, (error)=>{if(error)throw error; else onFinish()});
+                    (<MutableFile>megaFile).delete(true, resolver.callback);
                 }
             }
-            deleteRemoteFile(file);
+            deleteRemoteFile(file+".zip");
             deleteRemoteFile(file+".txt");
             deleteRemoteFile(file+".png");
             deleteRemoteFile(file+".jpeg");
@@ -111,23 +202,35 @@ export class MegajsStorage implements Storage<MegaJsStorageCredentials> {
             });
             
             // upload current zipped directory 
-            counter++;
-            archive.directory(join(LOCAL_PATH, category, file), false).pipe(folder.upload(file)).on('finish', onFinish);
+            resolver.borrow();
+            const tempFileName = join(__dirname, 'temp.zip');
+            const output = fs.createWriteStream(tempFileName);
+            archive.on("error", throwIfError);
+            archive.directory(join(LOCAL_PATH, category, file), false);
+            archive.pipe(output).on('finish', ()=>{
+                if(folder){// this check is only for typechecker
+                    fs.createReadStream(tempFileName).pipe(folder.upload(file+".zip")).on('finish', resolver.callback);
+                    fs.unlink(tempFileName, throwIfError);
+                }
+            });
+            archive.finalize();
+            
             // upload thumbnail 
             function uploadFileIfExists(file:string){
                 const path=join(LOCAL_PATH, category, file);
                 if(folder && fs.existsSync(path)){
-                    counter++;
-                    fs.createReadStream(path).pipe(folder.upload(file)).on('finish', onFinish);
+                    resolver.borrow();
+                    fs.createReadStream(path).pipe(folder.upload(file)).on('finish', resolver.callback);
                 }
             }
             uploadFileIfExists(file+".txt");
             uploadFileIfExists(file+".png");
             uploadFileIfExists(file+".jpeg");
             uploadFileIfExists(file+".jpg");
+            resolver.finishBorrowing();
         });
     }
-    onChange(callback: (messege : string)=>void){
+    onChange(callback: (message : string)=>void){
         if(this.storage==null){
             throw new Error("You must call connect before onChange.");
         } else {
@@ -150,13 +253,17 @@ export class MegajsStorage implements Storage<MegaJsStorageCredentials> {
                     CATEGORIES.forEach(category=>{
                         const category_folder=rootFolder.children.find(f=>f.name==category);
                         this.categories.set(category, <MutableFile>category_folder);
-
+                        
+                        const zipExtension=".zip";
                         if(category_folder!=undefined && category_folder.children!=undefined){
-                            result.set(category, category_folder.children.map(
-                                f=>new FileOrFolder(
-                                    f.name, 
+                            result.set(category, mapFilter(category_folder.children,
+                                f=>f.name.endsWith(zipExtension)
+                                    ? new FileOrFolder(
+                                    f.name.substring(0, f.name.length-zipExtension.length), 
                                     "https://mega.nz/fm/"+f.nodeId, 
-                                    new Date(f.timestamp*1000))));
+                                    new Date(f.timestamp*1000))
+                                    : null
+                                ));
                         } else {
                             result.set(category, []);
                         }

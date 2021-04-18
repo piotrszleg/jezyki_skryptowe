@@ -6,9 +6,13 @@ import FormControlLabel from "@material-ui/core/FormControlLabel";
 import Checkbox from "@material-ui/core/Checkbox";
 import Button from "@material-ui/core/Button";
 import promiseIpc from 'electron-promise-ipc';
-import { app } from 'electron';
+import { remote } from 'electron';
 
 const DEFAULT_SCRIPT_DEFINE={name:"name", value:"value"};
+
+function Divider(){
+    return <div style={{height:"2em"}} />;
+}
 
 export default class Settings extends React.Component {
     constructor(props) {
@@ -41,12 +45,16 @@ export default class Settings extends React.Component {
         promiseIpc.send("setSettings", state);
     }
 
-    changeHandler(stateFieldName, eventFieldName){
-        return event=>this.setState((state) =>{
-            const newState={ ...state, [stateFieldName]: event.target[eventFieldName] };
+    setStateAndSync(change){
+        this.setState(state=>{
+            const newState=change(state);
             this.updateRemoteSettings(newState);
             return newState;
         });
+    }
+
+    changeHandler(stateFieldName, eventFieldName){
+        return event=>this.setStateAndSync(state =>({ ...state, [stateFieldName]: event.target[eventFieldName] }));
     }
 
     textChangeHandler(stateFieldName){
@@ -58,8 +66,7 @@ export default class Settings extends React.Component {
     }
 
     relaunch(){
-        app.relaunch({ args: process.argv.slice(1).concat(['--relaunch']) });
-        app.exit(0);
+        promiseIpc.send("relaunch");
     }
 
     async reset(){
@@ -68,11 +75,11 @@ export default class Settings extends React.Component {
     }
 
     addScriptDefine(){
-        this.setState(state=>({...state, scriptDefines:[...state.scriptDefines, DEFAULT_SCRIPT_DEFINE]}));
+        this.setStateAndSync(state=>({...state, scriptDefines:[...state.scriptDefines, DEFAULT_SCRIPT_DEFINE]}));
     }
 
     scriptDefineChangeHandler(field, index){
-        return event=>this.setState(
+        return event=>this.setStateAndSync(
             state=>({...state, scriptDefines:state.scriptDefines.map(
                 // change field in element at given index
                 (element, i)=>i==index 
@@ -92,14 +99,12 @@ export default class Settings extends React.Component {
                     value={this.state.megaEmail} 
                     onChange={this.textChangeHandler("megaEmail")} 
                 />
-                <br />
-                <br />
+                <Divider />
                 <TextField label="Password" label="Password" type="password" 
                     value={this.state.megaPassword} 
                     onChange={this.textChangeHandler("megaPassword")}
                 />
-                <br />
-                <br />
+                <Divider />
             </div>
             <h3>Paths *</h3>
             <br />
@@ -110,39 +115,34 @@ export default class Settings extends React.Component {
                     value={this.state.localPath} 
                     onChange={this.textChangeHandler("localPath")} 
                 />
-                <br />
-                <br />
+                <Divider />
                 <TextField
                     fullWidth
                     label="Remote Path"
                     value={this.state.remotePath} 
                     onChange={this.textChangeHandler("remotePath")} 
                 />
-                <br />
-                <br />
+                <Divider />
                 <TextField 
                     fullWidth 
                     label="Shell" 
                     value={this.state.shell} 
                     onChange={this.textChangeHandler("shell")} 
                 />
-                <br />
-                <br />
+                <Divider />
             </div>
             <h3>Script defines</h3>
             {this.state.scriptDefines.map(({name, value}, index) =>
                 <div key={index}>
                     <TextField label="Name" value={name||""} onChange={this.scriptDefineChangeHandler("name", index)} />
                     <TextField label="Value" value={value||""} onChange={this.scriptDefineChangeHandler("value", index)} />
-                    <br />
-                    <br />
+                    <Divider />
                 </div>)
             }
             <Button variant="outlined" color="primary" onClick={this.addScriptDefine.bind(this)}>
                 Add
             </Button>
-            <br />
-            <br />
+            <Divider />
             <h3>Default Scripts</h3>
             <br />
             <div>
@@ -152,24 +152,21 @@ export default class Settings extends React.Component {
                     value={this.state.trainScript} 
                     onChange={this.textChangeHandler("trainScript")} 
                 />
-                <br />
-                <br />
+                <Divider />
                 <TextField
                     fullWidth
                     label="Generate"
                     value={this.state.generateScript} 
                     onChange={this.textChangeHandler("generateScript")} 
                 />
-                <br />
-                <br />
+                <Divider />
                 <TextField
                     fullWidth
                     label="Run"
                     value={this.state.runScript} 
                     onChange={this.textChangeHandler("runScript")} 
                 />
-                <br />
-                <br />
+                <Divider />
             </div>
             <h3>Extra options</h3>
             <div>
@@ -203,14 +200,7 @@ export default class Settings extends React.Component {
             <Button variant="contained" color="primary" onClick={this.relaunch.bind(this)}>
                 Relaunch App
             </Button>
-            <br />
-            <br />
-            <br />
-            <br />
-            <br />
-            <br />
-            <br />
-            <br />
+            <div style={{height:"16em"}} />
         </form>
     );
     }

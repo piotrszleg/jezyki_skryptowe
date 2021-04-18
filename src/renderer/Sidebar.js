@@ -58,7 +58,7 @@ export default function Sidebar(props) {
                         <ListItemText primary="Settings" />
                     </ListItem>
                     <ListItem button
-                    onClick={()=>shell.openExternal('https://github.com/piotrszleg/jezyki_skryptowe#readme')}>
+                    onClick={()=>shell.openExternal('https://github.com/piotrszleg/jezyki_skryptowe/projects')}>
                         <ListItemIcon>
                             <HelpOutlineIcon />
                         </ListItemIcon>

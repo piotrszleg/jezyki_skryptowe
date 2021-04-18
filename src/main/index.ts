@@ -69,6 +69,10 @@ async function main(webContents:Electron.WebContents) {
         return true;
     });
 
+    promiseIpc.on("getSettings", ()=>settings.getRaw());
+    promiseIpc.on("setSettings", (value:any)=>settings.update(value));
+    promiseIpc.on("resetSettings", (value:any)=>settings.reset());
+
     interface CredentialsFormData {
         email:string;
         password:string;

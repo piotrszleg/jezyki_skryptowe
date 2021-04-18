@@ -42,7 +42,9 @@ class Page extends React.Component {
     }
 
     async settingsLoaded(){
-        if(! await promiseIpc.send("connectToRemote", null)){
+        if(await promiseIpc.send("connectToRemote", null)){
+            this.loadFolders();
+        } else {
             this.loginDialog.current.open();
         }
     }
@@ -50,7 +52,6 @@ class Page extends React.Component {
     async loadFolders(){
         console.log("Requesting folders.");
         const folders=await promiseIpc.send("requestFolders");
-        console.log(folders);
         this.setFolders(folders);
     }
 
@@ -120,7 +121,11 @@ class Page extends React.Component {
                     ref={this.setPasswordDialog} 
                     callback={this.onNewPasswordInput.bind(this)} />
                 <LoginDialog ref={this.loginDialog} callback={this.onLoginData.bind(this)} />
-                <Sidebar folderCallback={this.setSelectedFolder.bind(this)} selectedFolder={this.state.selectedFolder} inSettings={this.state.inSettings} settingsCallback={this.switchToSettings.bind(this)}/>
+                <Sidebar 
+                    folderCallback={this.setSelectedFolder.bind(this)} 
+                    selectedFolder={this.state.selectedFolder} 
+                    inSettings={this.state.inSettings} 
+                    settingsCallback={this.switchToSettings.bind(this)}/>
                 <main className={classes.content}>
                     <Toolbar />
                     {this.state.inSettings

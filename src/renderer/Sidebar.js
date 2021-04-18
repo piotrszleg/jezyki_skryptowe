@@ -38,7 +38,7 @@ export default function Sidebar(props) {
                     {items.map(([name, icon], index)=>
                     <ListItem button 
                             key={index}
-                            selected={props.selectedFolder==name.toLowerCase()} 
+                            selected={!props.inSettings && props.selectedFolder==name.toLowerCase()} 
                             onClick={() => props.folderCallback(name.toLowerCase())}>
                         <ListItemIcon>
                             {icon()}

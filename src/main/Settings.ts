@@ -4,6 +4,22 @@ import crypto from "crypto";
 import { app } from "electron";
 import fs from "fs";
 
+const DEFAULT_SETTINGS = {
+    megaEmail: "",
+    megaPassword: "",
+    localPath: "~/nnm/data/",
+    remotePath: "https://mega.nz/fm/example",
+    autoLogin: false,
+    askBeforeDownloadingBigFiles: false,
+    trainScript: "python3 {yolo_path} {model} {dataset}",
+    generateScript: "python3 {generator} {data_path}",
+    runScript: "python3 -m {program}",
+    shell: "/bin/sh",
+    scriptDefines: [{ name: "data_path", value: "/usr/nnm/data/generated" }],
+};
+
+type SettingsContent = typeof DEFAULT_SETTINGS;
+
 const DB_PATH = path.join(app.getPath("appData"), "settings.db");
 
 function connectToDatabase(secret: string) {
@@ -15,10 +31,11 @@ function connectToDatabase(secret: string) {
         .substr(0, 32);
 
     return new Promise((resolve, reject) => {
-        const db= new Datastore({
+        const db = new Datastore({
             filename: DB_PATH,
             autoload: true,
-            onload: (error:string|null) => (error ? reject(error) : resolve(db)),
+            onload: (error: string | null) =>
+                error ? reject(error) : resolve(db),
             afterSerialization(plaintext: string) {
                 const iv = crypto.randomBytes(16);
                 const aes = crypto.createCipheriv(algorithm, key, iv);
@@ -39,62 +56,85 @@ function connectToDatabase(secret: string) {
     });
 }
 
-function promisify(fThis:any, f:any){
-    return function(...args: any[]){
-        return new Promise((resolve, reject)=>{
-            f.call(fThis, ...args, (error:string, value:any)=>{
-                if(error){
+function promisify(fThis: any, f: any) {
+    return function (...args: any[]) {
+        return new Promise((resolve, reject) => {
+            f.call(fThis, ...args, (error: string, value: any) => {
+                if (error) {
                     reject(error);
                 } else {
                     resolve(value);
                 }
             });
-        })
-    }
+        });
+    };
 }
 
 export default class Settings {
     db: typeof Datastore;
-    document: any;
+    document: SettingsContent | null = null;
     async connectToDatabase(password: string) {
         try {
             this.db = await connectToDatabase(password);
-            this.document = await promisify(this.db, this.db.findOne)({ type: "settings" });
+            this.document = <SettingsContent>(
+                await promisify(this.db, this.db.findOne)({ type: "settings" })
+            );
             if (this.document == null) {
                 throw new Error("Incorrect password.");
             }
-        } catch(e){
+        } catch (e) {
             throw new Error("Incorrect password.");
         }
     }
 
     async createDatabase(password: string) {
-        if(this.databaseExists()){
+        if (this.databaseExists()) {
             fs.unlinkSync(DB_PATH);
         }
         this.db = await connectToDatabase(password);
-        this.document = await (promisify(this.db, this.db.insert.bind)({ type: "settings" }));
+        this.document = <SettingsContent>(
+            await promisify(
+                this.db,
+                this.db.insert.bind
+            )({ type: "settings", ...DEFAULT_SETTINGS })
+        );
     }
     databaseExists() {
         return fs.existsSync(DB_PATH);
     }
-    async save(){
-        this.db.update({ type: "settings" }, this.document);
-        console.log("Settings updated, current state:");
-        console.log(await promisify(this.db, this.db.findOne)({ type: "settings" }));
+    getRaw(): SettingsContent {
+        return this.document || DEFAULT_SETTINGS;
+    }
+    async update(settings: any) {
+        this.document = { ...this.document, ...settings };
+        await this.save();
+    }
+    async save() {
+        await promisify(this.db, this.db.update)(
+            { type: "settings" },
+            this.document
+        );
+    }
+    async reset() {
+        this.document = { ...this.document, ...DEFAULT_SETTINGS };
+        this.save();
     }
     get megaEmail() {
-        return this.document.megaEmail;
+        return this.document?.megaEmail || DEFAULT_SETTINGS.megaEmail;
     }
     set megaEmail(email) {
-        this.document.megaEmail = email;
-        this.save();
+        if (this.document) {
+            this.document.megaEmail = email;
+            this.save();
+        }
     }
     get megaPassword() {
-        return this.document.megaPassword;
+        return this.document?.megaPassword || DEFAULT_SETTINGS.megaPassword;
     }
-    set megaPassword(password) {
-        this.document.password = password;
-        this.save();
+    set megaPassword(megaPassword) {
+        if (this.document) {
+            this.document.megaPassword = megaPassword;
+            this.save();
+        }
     }
 }

@@ -9,7 +9,7 @@ export default class Thumbnails extends React.Component {
     }
     render() {
         return (
-            <Grid container spacing={3} justify="space-evenly">
+            <Grid container spacing={3} justify="flex-start">
                 {this.props.folders.map((file, index) => (
                     <Grid item xs={3} key={index}>
                         <Thumbnail

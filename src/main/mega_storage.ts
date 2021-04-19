@@ -2,20 +2,27 @@ import { Storage as MegajsPackageStorage, MutableFile } from 'megajs';
 import {CATEGORIES, FileOrFolder, FilesStructure} from "./file_commons";
 import {EventEmitter} from "events";
 import Storage from "./storage_";
-import { LOCAL_PATH } from "./fs_storage";
 import { join } from "path";
 import fs from "fs";
 import archiver from "archiver";
 import unzipper from "unzipper";
 
-const ROOT_FOLDER_ID="MOp01QxZ";
+function extractMegaID(url:string){
+    const splitted=url.split("/");
+    console.log(splitted[splitted.length-1]);
+    return splitted[splitted.length-1];
+}
 
-export class MegaJsStorageCredentials {
+export class MegaJsStorageConfiguration {
     email:string;
     password:string;
-    constructor(email:string, password:string){
+    remoteFolder:string;
+    localFolder:string;
+    constructor(email:string, password:string, localFolder:string, remoteFolder:string){
         this.email = email;
         this.password=password;
+        this.localFolder = localFolder;
+        this.remoteFolder=remoteFolder;
     }
 };
 
@@ -55,10 +62,11 @@ class Resolver {
     }
 }
 
-export class MegajsStorage implements Storage<MegaJsStorageCredentials> {
+export class MegajsStorage implements Storage<MegaJsStorageConfiguration> {
     storage: MegajsPackageStorage|null=null;
     rootFolder: MutableFile|null=null;
     categories:Map<string, MutableFile>=new Map<string, MutableFile>();
+    localFolder:string="";
 
     async handleAction(action:string, folder:string, name:string){
         if(action=="Upload"){
@@ -72,9 +80,11 @@ export class MegajsStorage implements Storage<MegaJsStorageCredentials> {
         }
     }
 
-    connect(credentials:MegaJsStorageCredentials):Promise<void>{
+    connect(configuration:MegaJsStorageConfiguration):Promise<void>{
+        this.localFolder=configuration.localFolder;
         return new Promise((resolve, reject)=>{
             try {
+                const credentials={email:configuration.email, password:configuration.password};
                 this.storage = new MegajsPackageStorage(credentials, (error:string|null)=>{
                     if(error){
                         reject(error);
@@ -82,7 +92,8 @@ export class MegajsStorage implements Storage<MegaJsStorageCredentials> {
                     if(!this.storage?.root?.children){
                         reject("There is no storage root.");
                     }
-                    const rootFolder=this.storage?.root?.children.find(f=>f.nodeId==ROOT_FOLDER_ID);
+                    const rootFolderID=extractMegaID(configuration.remoteFolder);
+                    const rootFolder=this.storage?.root?.children.find(f=>f.nodeId==rootFolderID);
                     if(!rootFolder){
                         reject("Root folder id must be invalid.");
                     }
@@ -106,7 +117,7 @@ export class MegajsStorage implements Storage<MegaJsStorageCredentials> {
                 throw new Error("There is no file that was supposed to be downloaded.");
             }
 
-            const localPath=join(LOCAL_PATH, category, file);
+            const localPath=join(this.localFolder, category, file);
 
             function deleteOldFiles(resolver:Resolver){
                 console.log("Started deleting old files");
@@ -147,11 +158,12 @@ export class MegajsStorage implements Storage<MegaJsStorageCredentials> {
                         });
                 });
 
+                const localFolder=this.localFolder;
                 function downloadFile(file:string){
                     const megaFile=folder?.children.find(megaFile=>megaFile.name==file);
                     if(megaFile){
                         resolver.borrow();
-                        megaFile.download().pipe(fs.createWriteStream(join(LOCAL_PATH, category, file))).on('finish', resolver.callback);
+                        megaFile.download().pipe(fs.createWriteStream(join(localFolder, category, file))).on('finish', resolver.callback);
                     }
                 }
                 
@@ -206,7 +218,7 @@ export class MegajsStorage implements Storage<MegaJsStorageCredentials> {
             const tempFileName = join(__dirname, 'temp.zip');
             const output = fs.createWriteStream(tempFileName);
             archive.on("error", throwIfError);
-            archive.directory(join(LOCAL_PATH, category, file), false);
+            archive.directory(join(this.localFolder, category, file), false);
             archive.pipe(output).on('finish', ()=>{
                 if(folder){// this check is only for typechecker
                     fs.createReadStream(tempFileName).pipe(folder.upload(file+".zip")).on('finish', resolver.callback);
@@ -215,9 +227,10 @@ export class MegajsStorage implements Storage<MegaJsStorageCredentials> {
             });
             archive.finalize();
             
+            const localFolder=this.localFolder;
             // upload thumbnail 
             function uploadFileIfExists(file:string){
-                const path=join(LOCAL_PATH, category, file);
+                const path=join(localFolder, category, file);
                 if(folder && fs.existsSync(path)){
                     resolver.borrow();
                     fs.createReadStream(path).pipe(folder.upload(file)).on('finish', resolver.callback);

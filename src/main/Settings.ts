@@ -7,8 +7,8 @@ import fs from "fs";
 const DEFAULT_SETTINGS = {
     megaEmail: "",
     megaPassword: "",
-    localPath: "~/nnm/data/",
-    remotePath: "https://mega.nz/fm/example",
+    localPath: "E:/jezyki_skryptowe",
+    remotePath: "https://mega.nz/fm/MOp01QxZ",
     autoLogin: false,
     askBeforeDownloadingBigFiles: false,
     trainScript: "python3 {yolo_path} {model} {dataset}",
@@ -95,7 +95,7 @@ export default class Settings {
         this.document = <SettingsContent>(
             await promisify(
                 this.db,
-                this.db.insert.bind
+                this.db.insert
             )({ type: "settings", ...DEFAULT_SETTINGS })
         );
     }
@@ -136,5 +136,11 @@ export default class Settings {
             this.document.megaPassword = megaPassword;
             this.save();
         }
+    }
+    get remotePath() {
+        return this.document?.remotePath || DEFAULT_SETTINGS.remotePath;
+    }
+    get localPath() {
+        return this.document?.localPath || DEFAULT_SETTINGS.localPath;
     }
 }

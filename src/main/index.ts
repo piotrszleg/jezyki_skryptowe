@@ -3,7 +3,7 @@
 import { join } from "path";
 import { format as formatUrl } from "url";
 import FsStorage from "./fs_storage";
-import {MegajsStorage, MegaJsStorageCredentials} from "./mega_storage";
+import {MegajsStorage, MegaJsStorageConfiguration} from "./mega_storage";
 import Storage from "./storage_";
 import { app, BrowserWindow, Notification, IpcMainEvent } from "electron";
 import { FilesStructure } from "./file_commons";
@@ -89,10 +89,10 @@ async function main(webContents:Electron.WebContents) {
 
     const megaStorage=new MegajsStorage();
     const fsStorage=new FsStorage();
-    fsStorage.connect();
+    fsStorage.connect(settings.localPath);
 
     async function connectToRemote(formData:CredentialsFormData|null){
-        const credentials=new MegaJsStorageCredentials("", "");
+        const credentials=new MegaJsStorageConfiguration("", "", settings.localPath, settings.remotePath);
         if(formData){
             console.log("Trying to connect to mega using sent credentials.");
             if(formData.save){
@@ -108,7 +108,7 @@ async function main(webContents:Electron.WebContents) {
         }
 
         try {
-            await megaStorage.connect(new MegaJsStorageCredentials(credentials.email, credentials.password));
+            await megaStorage.connect(new MegaJsStorageConfiguration(credentials.email, credentials.password, settings.localPath, settings.remotePath));
             console.log("Connecting to Mega succeeded.");
 
             promiseIpc.on("requestFolders", async ()=>{

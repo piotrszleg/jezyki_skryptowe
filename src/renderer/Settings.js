@@ -20,8 +20,8 @@ export default class Settings extends React.Component {
         this.state={
             megaEmail:"",
             megaPassword:"",
-            localPath:"~/nnm/data/",
-            remotePath:"https://mega.nz/fm/example",
+            localPath:"E:/jezyki_skryptowe",
+            remotePath:"https://mega.nz/fm/MOp01QxZ",
             autoLogin:false,
             askBeforeDownloadingBigFiles:false,
             trainScript:"python3 {yolo_path} {model} {dataset}",

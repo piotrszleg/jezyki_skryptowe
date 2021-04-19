@@ -4,28 +4,34 @@ import {CATEGORIES, FileOrFolder, FilesStructure} from "./file_commons";
 import { join } from "path";
 import Storage from "./storage_";
 
-export const LOCAL_PATH = "E:/jezyki_skryptowe";
-
 const readdirPromise = promisify(fs.readdir);
 const statPromise = promisify(fs.stat);
 
-export default class FsStorage implements Storage<void> {
+export default class FsStorage implements Storage<string> {
+    path:string|null=null;
     async handleAction(action:string){
         return false;
     }
-    connect():Promise<void>{
+    connect(path:string):Promise<void>{
+        this.path = path;
         return new Promise((resolve, reject)=>resolve());
     }
     onChange(callback: (messege : string)=>void){
+        if(!this.path){
+            throw new Error("You must call connect before onChange.");
+        }
         // event is either change or rename
-        fs.watch(LOCAL_PATH, {recursive: true}, (event, filename)=>callback(`File or folder "${filename}" was `+event+"d"));
+        fs.watch(this.path, {recursive: true}, (event, filename)=>callback(`File or folder "${filename}" was `+event+"d"));
     }
     getFolders():Promise<FilesStructure>{
         return new Promise<FilesStructure>( (resolve, reject)=>{
+            if(!this.path){
+                reject("You must call connect before getFolders.");
+            }
             const result=new Map<string, FileOrFolder[]>();
             Promise.all(CATEGORIES.map(
                 async category=>{
-                    const categoryPath=join(LOCAL_PATH, category)
+                    const categoryPath=join(<string>this.path, category)
                     const files=await readdirPromise(categoryPath);
                     const filesData:FileOrFolder[]=<FileOrFolder[]>(await Promise.all(files.map(async (file:string)=>{
                         const fullFileName=join(categoryPath, file);

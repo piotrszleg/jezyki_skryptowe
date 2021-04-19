@@ -55,6 +55,12 @@ function getDescription(file:string) {
     }
 }
 
+// https://www.w3resource.com/javascript-exercises/javascript-date-exercise-44.php
+function diff_minutes(dt2:Date, dt1:Date) {
+    const diff =(dt2.getTime() - dt1.getTime()) / 1000;
+    return Math.abs(Math.round(diff/60));
+ }
+
 export async function createDisplayedFolders(localFiles: FilesStructure, remoteFiles: FilesStructure) : Promise<DisplayedFilesStructure> {
     const result=new Map<string, DisplayedFile[]>();
     const promises:Promise<any>[]=[];
@@ -77,7 +83,11 @@ export async function createDisplayedFolders(localFiles: FilesStructure, remoteF
             for(let file of remoteCategoryFiles){
                 let displayedFile=categoryMap.get(file.name);
                 if(displayedFile!=undefined) {
-                    if(displayedFile.mdate<file.mdate){
+                    // remove upload option if folders' dates are close
+                    // 5 minutes here is arbitrary, maybe it could be moved to config
+                    if(diff_minutes(displayedFile.mdate, file.mdate)<=5){
+                        displayedFile.actions=displayedFile.actions.filter(a=>a!="Upload");
+                    } else if(displayedFile.mdate<file.mdate){
                         // remote has newer version of the file 
                         const displayedFile=new DisplayedFile(file.name, "", "", file.mdate, ["Train", "Download"]);
                         categoryMap.set(file.name, displayedFile);

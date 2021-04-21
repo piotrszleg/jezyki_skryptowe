@@ -7,6 +7,12 @@ import fs from "fs";
 import archiver from "archiver";
 import unzipper from "unzipper";
 
+const THUMBNAIL_EXTENSIONS = [".png",".jpeg", ".jpg"];
+const ADDITIONAL_FILES_EXTENSIONS = THUMBNAIL_EXTENSIONS.concat([".txt"]);
+function forAdditionalFiles(basePath:string, callback:(file:string)=>void){
+    ADDITIONAL_FILES_EXTENSIONS.forEach(ext=>callback(basePath+ext));
+}
+
 function extractMegaID(url:string){
     const splitted=url.split("/");
     console.log(splitted[splitted.length-1]);
@@ -131,10 +137,7 @@ export class MegajsStorage implements Storage<MegaJsStorageConfiguration> {
                     resolver.borrow();
                     fs.rmdir(localPath, { recursive: true }, resolver.callback);
                 }
-                deleteLocalFile(localPath+".txt");
-                deleteLocalFile(localPath+".png");
-                deleteLocalFile(localPath+".jpeg");
-                deleteLocalFile(localPath+".jpg");
+                forAdditionalFiles(localPath, deleteLocalFile);
                 resolver.finishBorrowing();
             }
 
@@ -167,10 +170,7 @@ export class MegajsStorage implements Storage<MegaJsStorageConfiguration> {
                     }
                 }
                 
-                downloadFile(file+".txt");
-                downloadFile(file+".png");
-                downloadFile(file+".jpeg");
-                downloadFile(file+".jpg");
+                forAdditionalFiles(file, downloadFile);
                 resolver.finishBorrowing();
             });
 
@@ -205,10 +205,7 @@ export class MegajsStorage implements Storage<MegaJsStorageConfiguration> {
                 }
             }
             deleteRemoteFile(file+".zip");
-            deleteRemoteFile(file+".txt");
-            deleteRemoteFile(file+".png");
-            deleteRemoteFile(file+".jpeg");
-            deleteRemoteFile(file+".jpg");
+            forAdditionalFiles(file, deleteRemoteFile);
             const archive = archiver('zip', {
                 zlib: { level: 9 } // Sets the compression level.
             });
@@ -238,10 +235,7 @@ export class MegajsStorage implements Storage<MegaJsStorageConfiguration> {
                     fs.createReadStream(path).pipe(folder.upload(file, undefined, resolver.callback));
                 }
             }
-            uploadFileIfExists(file+".txt");
-            uploadFileIfExists(file+".png");
-            uploadFileIfExists(file+".jpeg");
-            uploadFileIfExists(file+".jpg");
+            forAdditionalFiles(file, uploadFileIfExists);
             resolver.finishBorrowing();
         });
     }
@@ -274,6 +268,7 @@ export class MegajsStorage implements Storage<MegaJsStorageConfiguration> {
                             result.set(category, mapFilter(category_folder.children,
                                 f=>f.name.endsWith(zipExtension)
                                     ? new FileOrFolder(
+                                    (<any>f.attributes).checksum||f.name,
                                     f.name.substring(0, f.name.length-zipExtension.length), 
                                     "https://mega.nz/fm/"+f.nodeId, 
                                     new Date(f.timestamp*1000))

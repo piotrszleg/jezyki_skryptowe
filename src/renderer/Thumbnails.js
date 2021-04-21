@@ -1,7 +1,6 @@
 import React from "react";
 import Thumbnail from "./Thumbnail.js";
 import Grid from "@material-ui/core/Grid";
-import { range } from "lodash";
 
 export default class Thumbnails extends React.Component {
     constructor(props) {

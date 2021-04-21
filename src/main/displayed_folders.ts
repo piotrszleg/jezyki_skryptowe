@@ -25,7 +25,7 @@ export type DisplayedFilesStructure = Map<string, DisplayedFile[]>;
 
 async function base64Encode(file:string) {
     try {
-        if(fs.statSync(file).isFile()){
+        if(fs.existsSync(file) && fs.statSync(file).isFile()){
             const image = await Jimp.read(fs.readFileSync(file));
             await image.resize(100, 100);
             await image.quality(0.5);
@@ -39,7 +39,7 @@ async function base64Encode(file:string) {
 }
 
 async function getThumbnail(file:string){
-    return <string>(await Promise.all([".png", ".jpeg", "jpg"]
+    return <string>(await Promise.all([".png", ".jpeg", ".jpg"]
         // try encoding the image to base64
         .map(async ext=>await base64Encode(file+ext))))
         // return first success
@@ -56,9 +56,9 @@ function getDescription(file:string) {
 }
 
 // https://www.w3resource.com/javascript-exercises/javascript-date-exercise-44.php
-function diff_minutes(dt2:Date, dt1:Date) {
-    const diff =(dt2.getTime() - dt1.getTime()) / 1000;
-    return Math.abs(Math.round(diff/60));
+function diffMinutes(dt2:Date, dt1:Date) {
+    const diff = (dt2.getTime() - dt1.getTime()) / 1000 / 60;
+    return Math.abs(Math.round(diff));
  }
 
 export async function createDisplayedFolders(localFiles: FilesStructure, remoteFiles: FilesStructure) : Promise<DisplayedFilesStructure> {
@@ -84,12 +84,12 @@ export async function createDisplayedFolders(localFiles: FilesStructure, remoteF
                 let displayedFile=categoryMap.get(file.name);
                 if(displayedFile!=undefined) {
                     // remove upload option if folders' dates are close
-                    // 5 minutes here is arbitrary, maybe it could be moved to config
-                    if(diff_minutes(displayedFile.mdate, file.mdate)<=5){
+                    // 30 minutes here is arbitrary, maybe it could be moved to config
+                    if(diffMinutes(displayedFile.mdate, file.mdate)<=30){
                         displayedFile.actions=displayedFile.actions.filter(a=>a!="Upload");
                     } else if(displayedFile.mdate<file.mdate){
                         // remote has newer version of the file 
-                        const displayedFile=new DisplayedFile(file.name, "", "", file.mdate, ["Train", "Download"]);
+                        displayedFile=new DisplayedFile(file.name, "", "", file.mdate, ["Train", "Download"]);
                         categoryMap.set(file.name, displayedFile);
                     }
                 } else {

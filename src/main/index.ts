@@ -6,7 +6,6 @@ import FsStorage from "./fs_storage";
 import {MegajsStorage, MegaJsStorageConfiguration} from "./mega_storage";
 import Storage from "./storage_";
 import { app, BrowserWindow, Notification, IpcMainEvent } from "electron";
-import { FilesStructure } from "./file_commons";
 import { createDisplayedFolders, DisplayedFilesStructure } from "./displayed_folders";
 import Settings from "./settings";
 import promiseIpc from 'electron-promise-ipc';
@@ -24,7 +23,7 @@ function notify(title:string, message:string){
     new Notification(notification).show();
 }
 
-async function handleStorage(storage:Storage<any>, showNotifications:Boolean=true):Promise<FilesStructure>{
+function addStorageHooks(storage:Storage<any>, showNotifications:Boolean=false) {
     if(showNotifications){
         storage.onChange(message => notify("Changes on drive", message));
     }
@@ -32,19 +31,15 @@ async function handleStorage(storage:Storage<any>, showNotifications:Boolean=tru
         console.log(`Received action ${action} for '${folder}/${name}'`);
         return storage.handleAction(<string>action, <string>folder, <string>name);
     });
-    const folders=await storage.getFolders();
-    // console.log(folders);
-    return folders;
 }
 
-async function handleStorages(fsStorage:FsStorage, megaStorage:MegajsStorage):Promise<DisplayedFilesStructure> {
+async function loadAndMergeFolders(fsStorage:FsStorage, megaStorage:MegajsStorage):Promise<DisplayedFilesStructure> {
     const [localFiles, remoteFiles] = 
         await Promise.all(
-        [handleStorage(fsStorage, false),
-        handleStorage(megaStorage, false) ]);
+        [fsStorage.getFolders(),
+        megaStorage.getFolders() ]);
 
     const displayedFiles=await createDisplayedFolders(localFiles, remoteFiles);
-    // console.log(displayedFiles);
     return displayedFiles;
 }
 
@@ -110,9 +105,12 @@ async function main(webContents:Electron.WebContents) {
         try {
             await megaStorage.connect(new MegaJsStorageConfiguration(credentials.email, credentials.password, settings.localPath, settings.remotePath));
             console.log("Connecting to Mega succeeded.");
+            
+            addStorageHooks(fsStorage),
+            addStorageHooks(megaStorage);
 
             promiseIpc.on("requestFolders", async ()=>{
-                const displayedFiles=await handleStorages(fsStorage, megaStorage);
+                const displayedFiles=await loadAndMergeFolders(fsStorage, megaStorage);
         
                 return displayedFiles;
             });
@@ -164,7 +162,6 @@ function createMainWindow(): BrowserWindow {
     });
     
     main(window.webContents);
-    // promiseIpc.on("requestFolders", handleStorages);
 
     return window;
 }

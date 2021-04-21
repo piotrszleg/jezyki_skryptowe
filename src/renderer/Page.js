@@ -9,6 +9,7 @@ import Toolbar from "@material-ui/core/Toolbar";
 import LoginDialog from "./LoginDialog.js";
 import PasswordDialog from "./PasswordDialog.js";
 import SetPasswordDialog from "./SetPasswordDialog.js";
+import Loading from "./Loading.js";
 import PropTypes from 'prop-types';
 import { withStyles } from '@material-ui/styles';
 import promiseIpc from 'electron-promise-ipc';
@@ -20,7 +21,8 @@ class Page extends React.Component {
             folders:null,
             selectedFolder:"datasets",
             classes:{},
-            inSettings:false
+            inSettings:false,
+            isLoading:false
         }
         this.passwordDialog=React.createRef();
         this.setPasswordDialog=React.createRef();
@@ -33,6 +35,7 @@ class Page extends React.Component {
     }
 
     setSelectedFolder(folder) {
+        this.loadFolders();
         this.setState(state=>({...state, selectedFolder:folder, inSettings:false}));
         return true;
     }
@@ -42,17 +45,26 @@ class Page extends React.Component {
     }
 
     async settingsLoaded(){
+        this.setLoading(true);
         if(await promiseIpc.send("connectToRemote", null)){
-            this.loadFolders();
+            await this.loadFolders();
         } else {
+            this.setLoading(false);
             this.loginDialog.current.open();
         }
+    }
+
+    setLoading(loading) {
+        this.setState(state=>({...state, isLoading:loading}));
     }
 
     async loadFolders(){
         console.log("Requesting folders.");
         const folders=await promiseIpc.send("requestFolders");
         this.setFolders(folders);
+        this.setLoading(false);
+        // refresh every 30 seconds
+        setTimeout(this.loadFolders.bind(this), 30000);
     }
 
     setFolders(folders){
@@ -95,9 +107,11 @@ class Page extends React.Component {
     }
 
     async onLoginData(credentials){
+        this.setLoading(true);
         if(await promiseIpc.send("connectToRemote", credentials)){
             this.loadFolders();
         } else {
+            this.setLoading(false);
             // try again 
             this.loginDialog.current.open();
         }
@@ -130,7 +144,9 @@ class Page extends React.Component {
                     <Toolbar />
                     {this.state.inSettings
                     ? <Settings />
-                    : <Thumbnails folders={this.getItemsList()} actionCallback={(name, action)=>this.sendAction(this.state.selectedFolder, name, action)} />
+                    : (this.state.isLoading ?
+                        <Loading />
+                        : <Thumbnails folders={this.getItemsList()} actionCallback={(name, action)=>this.sendAction(this.state.selectedFolder, name, action)} />)
                     }
                 </main>
             </div>

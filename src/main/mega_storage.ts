@@ -178,7 +178,7 @@ export class MegajsStorage implements Storage<MegaJsStorageConfiguration> {
         });
     }
 
-    async upload(category:string, file:string){
+    upload(category:string, file:string){
         return new Promise<void>((resolve, reject) =>{
             if(this.rootFolder==null){
                 throw new Error("You must call connect before upload.");
@@ -221,8 +221,10 @@ export class MegajsStorage implements Storage<MegaJsStorageConfiguration> {
             archive.directory(join(this.localFolder, category, file), false);
             archive.pipe(output).on('finish', ()=>{
                 if(folder){// this check is only for typechecker
-                    fs.createReadStream(tempFileName).pipe(folder.upload(file+".zip")).on('finish', resolver.callback);
+                    fs.createReadStream(tempFileName).pipe(folder.upload(file+".zip", undefined, resolver.callback));
                     fs.unlink(tempFileName, throwIfError);
+                } else {
+                    resolver.callback();
                 }
             });
             archive.finalize();
@@ -233,7 +235,7 @@ export class MegajsStorage implements Storage<MegaJsStorageConfiguration> {
                 const path=join(localFolder, category, file);
                 if(folder && fs.existsSync(path)){
                     resolver.borrow();
-                    fs.createReadStream(path).pipe(folder.upload(file)).on('finish', resolver.callback);
+                    fs.createReadStream(path).pipe(folder.upload(file, undefined, resolver.callback));
                 }
             }
             uploadFileIfExists(file+".txt");

@@ -7,6 +7,8 @@ import fs from "fs";
 import archiver from "archiver";
 import unzipper from "unzipper";
 
+const BIG_FILE_SIZE=3000000;
+
 const THUMBNAIL_EXTENSIONS = [".png",".jpeg", ".jpg"];
 const ADDITIONAL_FILES_EXTENSIONS = THUMBNAIL_EXTENSIONS.concat([".txt"]);
 function forAdditionalFiles(basePath:string, callback:(file:string)=>void){
@@ -19,16 +21,20 @@ function extractMegaID(url:string){
     return splitted[splitted.length-1];
 }
 
+type Confirmation = (message:string)=>Promise<boolean>;
+
 export class MegaJsStorageConfiguration {
     email:string;
     password:string;
     remoteFolder:string;
     localFolder:string;
-    constructor(email:string, password:string, localFolder:string, remoteFolder:string){
+    confirmationDialog:Confirmation;
+    constructor(email:string, password:string, localFolder:string, remoteFolder:string, confirmationDialog:Confirmation){
         this.email = email;
         this.password=password;
         this.localFolder = localFolder;
         this.remoteFolder=remoteFolder;
+        this.confirmationDialog=confirmationDialog;
     }
 };
 
@@ -75,6 +81,7 @@ export class MegajsStorage implements Storage<MegaJsStorageConfiguration> {
     rootFolder: MutableFile|null=null;
     categories:Map<string, MutableFile>=new Map<string, MutableFile>();
     localFolder:string="";
+    confirmationDialog:Confirmation=async ()=>true;
 
     async handleAction(action:string, folder:string, name:string){
         if(action=="Upload"){
@@ -90,6 +97,7 @@ export class MegajsStorage implements Storage<MegaJsStorageConfiguration> {
 
     connect(configuration:MegaJsStorageConfiguration):Promise<void>{
         this.localFolder=configuration.localFolder;
+        this.confirmationDialog=configuration.confirmationDialog;
         return new Promise((resolve, reject)=>{
             try {
                 const credentials={email:configuration.email, password:configuration.password};
@@ -113,38 +121,28 @@ export class MegajsStorage implements Storage<MegaJsStorageConfiguration> {
             }
         });
     }
-    
-    download(category:string, file:string):Promise<void>{
-        return new Promise<void>((resolve, reject) =>{
-            const folder=this.categories.get(category);
-            if(!folder){
-                throw new Error("There is no folder to download from.");
-            }
-            const megaFile=folder.children.find(megaFile=>megaFile.name==file+".zip");
-            if(!megaFile){
-                throw new Error("There is no file that was supposed to be downloaded.");
-            }
 
-            const localPath=join(this.localFolder, category, file);
-
-            function deleteOldFiles(resolver:Resolver){
-                console.log("Started deleting old files");
-                function deleteLocalFile(file:string){
-                    if(fs.existsSync(file)){
-                        resolver.borrow();
-                        fs.unlink(file, resolver.callback);
-                    }
-                }
-                if(fs.existsSync(localPath)){
+    deleteOldFiles(localPath:string){
+        return new Promise<void>((resolve, reject)=>{
+            const resolver=new Resolver(resolve);
+            console.log("Started deleting old files");
+            function deleteLocalFile(file:string){
+                if(fs.existsSync(file)){
                     resolver.borrow();
-                    fs.rmdir(localPath, { recursive: true }, resolver.callback);
+                    fs.unlink(file, resolver.callback);
                 }
-                forAdditionalFiles(localPath, deleteLocalFile);
-                resolver.finishBorrowing();
             }
+            if(fs.existsSync(localPath)){
+                resolver.borrow();
+                fs.rmdir(localPath, { recursive: true }, resolver.callback);
+            }
+            forAdditionalFiles(localPath, deleteLocalFile);
+            resolver.finishBorrowing();
+        });
+    }
 
-            const deleteResolver=new Resolver(()=>{
-                console.log("Finished deleting old files");
+    downloadNewFiles(localPath:string, file:string, category:string, folder:MutableFile, megaFile:MutableFile){
+        return new Promise<void>((resolve, reject)=>{
                 
                 const zipPath=localPath+".zip";
 
@@ -175,9 +173,34 @@ export class MegajsStorage implements Storage<MegaJsStorageConfiguration> {
                 forAdditionalFiles(file, downloadFile);
                 resolver.finishBorrowing();
             });
+    }
+    
+    async download(category:string, file:string):Promise<void>{
+            const folder=this.categories.get(category);
+            if(!folder){
+                throw new Error("There is no folder to download from.");
+            }
+            const megaFile=folder.children.find(megaFile=>megaFile.name==file+".zip");
+            if(!megaFile){
+                throw new Error("There is no file that was supposed to be downloaded.");
+            }
+            if(megaFile.size>=BIG_FILE_SIZE){
+                if(! await this.confirmationDialog(`Are you sure you want to download a file of size ${megaFile.size}B`)){
+                    console.log("User cancelled download");
+                    // user decided not to download this file
+                    return;
+                } else {
+                    console.log("User proceeded with download");
+                }
+            }
 
-            deleteOldFiles(deleteResolver);
-        });
+            const localPath=join(this.localFolder, category, file);
+
+            await this.deleteOldFiles(localPath);
+            
+            console.log("Finished deleting old files");
+
+            await this.downloadNewFiles(localPath, file, category, folder, <MutableFile>megaFile);
     }
 
     upload(category:string, file:string){

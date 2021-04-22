@@ -143,4 +143,7 @@ export default class Settings {
     get localPath() {
         return this.document?.localPath || DEFAULT_SETTINGS.localPath;
     }
+    get askBeforeDownloadingBigFiles() {
+        return this.document?.askBeforeDownloadingBigFiles || DEFAULT_SETTINGS.askBeforeDownloadingBigFiles;
+    }
 }

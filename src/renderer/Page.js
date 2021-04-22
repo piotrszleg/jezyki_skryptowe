@@ -9,6 +9,7 @@ import Toolbar from "@material-ui/core/Toolbar";
 import LoginDialog from "./LoginDialog.js";
 import PasswordDialog from "./PasswordDialog.js";
 import SetPasswordDialog from "./SetPasswordDialog.js";
+import ConfirmationDialog from "./ConfirmationDialog.js";
 import Loading from "./Loading.js";
 import PropTypes from 'prop-types';
 import { withStyles } from '@material-ui/styles';
@@ -29,6 +30,15 @@ class Page extends React.Component {
         this.setPasswordDialog=React.createRef();
         this.loginDialog=React.createRef();
         this.thumbnails=React.createRef();
+
+        this.confirmationDialog=React.createRef();
+        const savedThis=this;
+        promiseIpc.on("confirmation", (message)=>{
+            return new Promise(function(resolve, reject){
+                if(savedThis.confirmationDialog.current)
+                    savedThis.confirmationDialog.current.open(message, resolve);
+            });
+        })
     }
 
     componentDidMount(){
@@ -142,6 +152,7 @@ class Page extends React.Component {
             <div className={classes.root}>
                 <CssBaseline />
                 <Topbar />
+                <ConfirmationDialog ref={this.confirmationDialog} />
                 <PasswordDialog 
                     ref={this.passwordDialog} 
                     callback={this.onPasswordInput.bind(this)} 

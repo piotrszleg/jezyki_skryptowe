@@ -90,7 +90,14 @@ async function main(webContents:Electron.WebContents) {
     fsStorage.connect(settings.localPath);
 
     async function connectToRemote(formData:CredentialsFormData|null){
-        const credentials=new MegaJsStorageConfiguration("", "", settings.localPath, settings.remotePath);
+        function confirmationDialog(message:string):Promise<boolean> {
+            if(settings.askBeforeDownloadingBigFiles){
+                return <Promise<boolean>>promiseIpc.send("confirmation", webContents, message);
+            } else {
+                return (async (message:string)=>true)(message);
+            }
+        }
+        const credentials=new MegaJsStorageConfiguration("", "", settings.localPath, settings.remotePath, confirmationDialog);
         if(formData){
             console.log("Trying to connect to mega using sent credentials.");
             if(formData.save){
@@ -106,7 +113,7 @@ async function main(webContents:Electron.WebContents) {
         }
 
         try {
-            await megaStorage.connect(new MegaJsStorageConfiguration(credentials.email, credentials.password, settings.localPath, settings.remotePath));
+            await megaStorage.connect(new MegaJsStorageConfiguration(credentials.email, credentials.password, settings.localPath, settings.remotePath, confirmationDialog));
             console.log("Connecting to Mega succeeded.");
 
             async function sendFolders(){

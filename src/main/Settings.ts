@@ -146,4 +146,7 @@ export default class Settings {
     get askBeforeDownloadingBigFiles() {
         return this.document?.askBeforeDownloadingBigFiles || DEFAULT_SETTINGS.askBeforeDownloadingBigFiles;
     }
+    get autoLogin() {
+        return this.document?.autoLogin || DEFAULT_SETTINGS.autoLogin;
+    }
 }

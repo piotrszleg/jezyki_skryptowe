@@ -107,6 +107,10 @@ async function main(webContents:Electron.WebContents) {
             credentials.email=formData.email;
             credentials.password=formData.password;
         } else {
+            if(settings.autoLogin){
+                console.log("Rejecting auto login.");
+                return false;
+            }
             console.log("Trying to connect to mega using saved credentials.");
             credentials.email=settings.megaEmail;
             credentials.password=settings.megaPassword;

@@ -5,7 +5,7 @@ import { format as formatUrl } from "url";
 import FsStorage from "./fs_storage";
 import {MegajsStorage, MegaJsStorageConfiguration} from "./mega_storage";
 import Storage from "./storage_";
-import { app, BrowserWindow, Notification, IpcMainEvent } from "electron";
+import { app, BrowserWindow, Notification, IpcMainEvent, WebContents } from "electron";
 import { createDisplayedFolders, DisplayedFilesStructure } from "./displayed_folders";
 import Settings from "./settings";
 import promiseIpc from 'electron-promise-ipc';
@@ -23,13 +23,16 @@ function notify(title:string, message:string){
     new Notification(notification).show();
 }
 
-function addStorageHooks(storage:Storage<any>, showNotifications:Boolean=false) {
+function addStorageHooks(storage:Storage<any>, changeCallback:()=>void, showNotifications:Boolean=false) {
     if(showNotifications){
         storage.onChange(message => notify("Changes on drive", message));
     }
-    promiseIpc.on("action", (folder:unknown, name:unknown, action:unknown, event?: IpcMainEvent)=>{
+    storage.onChange(changeCallback);
+    promiseIpc.on("action", async (folder:unknown, name:unknown, action:unknown, event?: IpcMainEvent)=>{
         console.log(`Received action ${action} for '${folder}/${name}'`);
-        return storage.handleAction(<string>action, <string>folder, <string>name);
+        if(await storage.handleAction(<string>action, <string>folder, <string>name)){
+            changeCallback();
+        }
     });
 }
 
@@ -105,15 +108,15 @@ async function main(webContents:Electron.WebContents) {
         try {
             await megaStorage.connect(new MegaJsStorageConfiguration(credentials.email, credentials.password, settings.localPath, settings.remotePath));
             console.log("Connecting to Mega succeeded.");
-            
-            addStorageHooks(fsStorage),
-            addStorageHooks(megaStorage);
 
-            promiseIpc.on("requestFolders", async ()=>{
-                const displayedFiles=await loadAndMergeFolders(fsStorage, megaStorage);
-        
-                return displayedFiles;
-            });
+            async function sendFolders(){
+                return promiseIpc.send("folders", webContents, await loadAndMergeFolders(fsStorage, megaStorage));
+            }
+
+            addStorageHooks(fsStorage, sendFolders),
+            addStorageHooks(megaStorage, sendFolders);
+
+            promiseIpc.on("requestFolders", ()=>loadAndMergeFolders(fsStorage, megaStorage));
 
             return true;
         } catch(err){

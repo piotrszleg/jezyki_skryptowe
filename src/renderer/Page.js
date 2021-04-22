@@ -35,7 +35,6 @@ class Page extends React.Component {
     }
 
     setSelectedFolder(folder) {
-        this.loadFolders();
         this.setState(state=>({...state, selectedFolder:folder, inSettings:false}));
         return true;
     }
@@ -47,7 +46,7 @@ class Page extends React.Component {
     async settingsLoaded(){
         this.setLoading(true);
         if(await promiseIpc.send("connectToRemote", null)){
-            await this.loadFolders();
+            await this.onConnectedToMega();
         } else {
             this.setLoading(false);
             this.loginDialog.current.open();
@@ -58,13 +57,24 @@ class Page extends React.Component {
         this.setState(state=>({...state, isLoading:loading}));
     }
 
+    async onConnectedToMega(){
+        this.loadFolders();
+
+        promiseIpc.on("folders", (folders)=>{
+            console.log("Received folders.");
+            this.setFolders(folders);
+        });
+
+        const refreshRate=60000;
+        setInterval(this.loadFolders.bind(this), refreshRate);
+
+        this.setLoading(false);
+    }
+
     async loadFolders(){
         console.log("Requesting folders.");
         const folders=await promiseIpc.send("requestFolders");
         this.setFolders(folders);
-        this.setLoading(false);
-        // refresh every 30 seconds
-        setTimeout(this.loadFolders.bind(this), 30000);
     }
 
     setFolders(folders){
@@ -81,10 +91,7 @@ class Page extends React.Component {
 
     async sendAction(folder, name, action){
         console.log(`Requested action ${action} for '${folder}/${name}'`);
-        if(await promiseIpc.send("action", folder, name, action)){
-            console.log("Action returned true.");
-            this.loadFolders();
-        }
+        promiseIpc.send("action", folder, name, action);
     }
 
     switchToSettingPassword(){
@@ -109,7 +116,7 @@ class Page extends React.Component {
     async onLoginData(credentials){
         this.setLoading(true);
         if(await promiseIpc.send("connectToRemote", credentials)){
-            this.loadFolders();
+            this.onConnectedToMega();
         } else {
             this.setLoading(false);
             // try again 

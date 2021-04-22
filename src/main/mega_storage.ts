@@ -59,10 +59,12 @@ class Resolver {
     }
     constructor(resolve:()=>void){
         this.resolve=resolve;
+
+        const savedThis=this;
         this.callback=()=>{
-            this.counter--;
-            if(this.counter<=0){
-                this.resolve();
+            savedThis.counter--;
+            if(savedThis.counter<=0){
+                savedThis.resolve();
             }
         }
     }
@@ -218,7 +220,7 @@ export class MegajsStorage implements Storage<MegaJsStorageConfiguration> {
             archive.directory(join(this.localFolder, category, file), false);
             archive.pipe(output).on('finish', ()=>{
                 if(folder){// this check is only for typechecker
-                    fs.createReadStream(tempFileName).pipe(folder.upload(file+".zip", undefined, resolver.callback));
+                    fs.createReadStream(tempFileName).pipe(folder.upload(file+".zip").on('error', reject).on("complete", resolver.callback));
                     fs.unlink(tempFileName, throwIfError);
                 } else {
                     resolver.callback();

@@ -14,6 +14,7 @@ export default class Thumbnails extends React.Component {
                         <Thumbnail
                             file={file}
                             actionCallback={this.props.actionCallback}
+                            isProcessed={this.props.isProcessed}
                         />
                     </Grid>
                 ))}

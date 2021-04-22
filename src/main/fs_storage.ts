@@ -72,8 +72,8 @@ export default class FsStorage implements Storage<string> {
                         try {
                             stats=await statPromise(fullFileName);
                         } catch(err){
-                            // stat error, print it and skip file
-                            console.log(err);
+                            // stat error, the file was deleted in the process of scanning, skip file
+                            // console.log(err);
                             return null;
                         }
                         if(stats.isDirectory()){

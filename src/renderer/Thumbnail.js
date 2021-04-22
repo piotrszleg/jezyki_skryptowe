@@ -43,7 +43,7 @@ export default function Thumbnail(props) {
                     </Button>
                 )}   
             </CardActions>
-            <LinearProgress hidden={true}/>
+            <LinearProgress hidden={!props.isProcessed(props.file.name)}/>
         </Card>
     );
 }

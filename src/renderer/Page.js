@@ -22,7 +22,8 @@ class Page extends React.Component {
             selectedFolder:"datasets",
             classes:{},
             inSettings:false,
-            isLoading:false
+            isLoading:false,
+            processedFolders:[]
         }
         this.passwordDialog=React.createRef();
         this.setPasswordDialog=React.createRef();
@@ -89,9 +90,16 @@ class Page extends React.Component {
         }
     }
 
-    async sendAction(folder, name, action){
-        console.log(`Requested action ${action} for '${folder}/${name}'`);
-        promiseIpc.send("action", folder, name, action);
+    isProcessed(category, name){
+        return this.state.processedFolders.some(e=>e.category==category && e.name==name);
+    }
+
+    async sendAction(category, name, action){
+        this.setState(state=>({...state, processedFolders:state.processedFolders.concat({category:category, name:name})}));
+        console.log(`Requested action ${action} for '${category}/${name}'`);
+        await promiseIpc.send("action", category, name, action);
+        console.log("Action finished.");
+        this.setState(state=>({...state, processedFolders:state.processedFolders.filter(e=>!(e.category==category && e.name==name))}));
     }
 
     switchToSettingPassword(){
@@ -153,7 +161,10 @@ class Page extends React.Component {
                     ? <Settings />
                     : (this.state.isLoading ?
                         <Loading />
-                        : <Thumbnails folders={this.getItemsList()} actionCallback={(name, action)=>this.sendAction(this.state.selectedFolder, name, action)} />)
+                        : <Thumbnails 
+                            isProcessed={name=>this.isProcessed(this.state.selectedFolder, name)} 
+                            folders={this.getItemsList()} 
+                            actionCallback={(name, action)=>this.sendAction(this.state.selectedFolder, name, action)} />)
                     }
                 </main>
             </div>

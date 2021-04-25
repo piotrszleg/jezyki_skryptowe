@@ -8,11 +8,13 @@ import Button from "@material-ui/core/Button";
 import Typography from "@material-ui/core/Typography";
 import {getClasses} from "./style.js";
 import LinearProgress from "@material-ui/core/LinearProgress";
+import ThumbnailOptions from "./ThumbnailOptions.js";
 
 export default function Thumbnail(props) {
     const classes = getClasses();
+    const options=React.createRef();
     return (
-        <Card className={classes.thumbnail}>
+        <Card className={classes.thumbnail} onContextMenu={ev=>options.current.switchOpen(ev.currentTarget)}>
             <CardActionArea>
                 <CardMedia
                     component="img"
@@ -44,6 +46,7 @@ export default function Thumbnail(props) {
                 )}   
             </CardActions>
             <LinearProgress hidden={!props.isProcessed(props.file.name)}/>
+            <ThumbnailOptions ref={options} />
         </Card>
     );
 }

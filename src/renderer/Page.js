@@ -10,6 +10,7 @@ import LoginDialog from "./LoginDialog.js";
 import PasswordDialog from "./PasswordDialog.js";
 import SetPasswordDialog from "./SetPasswordDialog.js";
 import ConfirmationDialog from "./ConfirmationDialog.js";
+import CodeEditor from "./CodeEditor.js";
 import Loading from "./Loading.js";
 import PropTypes from 'prop-types';
 import { withStyles } from '@material-ui/styles';
@@ -153,6 +154,7 @@ class Page extends React.Component {
                 <CssBaseline />
                 <Topbar />
                 <ConfirmationDialog ref={this.confirmationDialog} />
+                <CodeEditor />
                 <PasswordDialog 
                     ref={this.passwordDialog} 
                     callback={this.onPasswordInput.bind(this)} 

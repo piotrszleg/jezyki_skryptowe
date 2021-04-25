@@ -51,13 +51,13 @@ export default class ThumbnailOptions extends React.Component{
         aria-label="vertical contained primary button group"
         variant="text"
       >
-          <Button size="small" color="primary">
+          <Button>
             On Download
             </Button>
-            <Button size="small" color="primary">
+            <Button>
             On Upload
             </Button>
-         <Button size="small" color="primary">
+         <Button>
             Add action
             </Button>
             </ButtonGroup>

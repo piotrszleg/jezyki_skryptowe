@@ -55,7 +55,16 @@ class Page extends React.Component {
         this.passwordDialog.current.open();
     }
 
+    async updateLoginDialog(){
+        const settings=await promiseIpc.send("getSettings");
+        if(this.loginDialog.current && settings){
+            this.loginDialog.current.setCredentials(settings.megaEmail, settings.megaPassword);
+        }
+    }
+
     async settingsLoaded(){
+        this.updateLoginDialog();
+
         this.setLoading(true);
         if(await promiseIpc.send("connectToRemote", null)){
             await this.onConnectedToMega();

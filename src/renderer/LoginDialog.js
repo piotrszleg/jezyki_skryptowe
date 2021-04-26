@@ -25,6 +25,14 @@ export default class FormDialog extends React.Component {
         };
     }
 
+    setCredentials(email, password) {
+        this.setState(state => ({
+            ...state,
+            email: email,
+            password: password
+        }));
+    }
+
     handleClose() {
         this.props.callback(this.state);
         this.setState(state => ({

@@ -107,7 +107,7 @@ async function main(webContents:Electron.WebContents) {
             credentials.email=formData.email;
             credentials.password=formData.password;
         } else {
-            if(settings.autoLogin){
+            if(!settings.autoLogin){
                 console.log("Rejecting auto login.");
                 return false;
             }

@@ -16,27 +16,33 @@ export default class CodeEditor extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            open: true,
+            open: false,
+            name: "Clean",
             code: "rm *.temp",
+            isNew: true,
         };
     }
 
     open() {
-        this.setState(state => ({
+        this.setState((state) => ({
             ...state,
-            open: true
+            open: true,
         }));
     }
 
     close() {
-        this.setState(state => ({
+        this.setState((state) => ({
             ...state,
-            open: false
+            open: false,
         }));
     }
 
     setCode(event) {
         this.setState((state) => ({ ...state, code: event.target.value }));
+    }
+
+    setName(event) {
+        this.setState((state) => ({ ...state, name: event.target.value }));
     }
 
     render() {
@@ -49,9 +55,23 @@ export default class CodeEditor extends React.Component {
                 fullWidth={true}
                 maxWidth={"md"}
             >
-                <DialogTitle id="form-dialog-title">Code of action "Clean"</DialogTitle>
+                <DialogTitle hidden={this.state.isNew} id="form-dialog-title">
+                    Code of action "Clean"
+                </DialogTitle>
                 <DialogContent>
                     <DialogContentText>{this.props.reason}</DialogContentText>
+                    {this.state.isNew ? (
+                        <TextField
+                            hidden={!this.state.isNew}
+                            margin="dense"
+                            id="name"
+                            label="Action Name"
+                            value={this.state.name}
+                            onChange={this.setName.bind(this)}
+                            fullWidth
+                            variant="outlined"
+                        />
+                    ) : null}
                     <TextField
                         margin="dense"
                         id="code"
@@ -65,18 +85,17 @@ export default class CodeEditor extends React.Component {
                     />
                 </DialogContent>
                 <DialogActions>
-                    <Button
-                        onClick={this.close.bind(this)}
-                        color="primary"
-                    >
-                        Close and save
+                    <Button onClick={this.close.bind(this)} color="primary">
+                        {this.state.isNew ? "Cancel Adding" : "Delete"}
                     </Button>
-                    <Button
-                        onClick={this.close.bind(this)}
-                        color="primary"
-                    >
-                        Run
+                    <Button onClick={this.close.bind(this)} color="primary">
+                        Save and close
                     </Button>
+                    {this.state.isNew ? (
+                        <Button onClick={this.close.bind(this)} color="primary">
+                            Run
+                        </Button>
+                    ) : null}
                 </DialogActions>
             </Dialog>
         );

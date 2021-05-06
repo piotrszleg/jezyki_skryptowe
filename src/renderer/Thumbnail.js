@@ -47,7 +47,10 @@ export default function Thumbnail(props) {
                 )}   
             </CardActions>
             <LinearProgress hidden={!props.isProcessed(props.file.name)}/>
-            <ThumbnailOptions ref={options} elements={Object.keys(props.file.metadata.actions)} />
+            <ThumbnailOptions ref={options} elements={Object.keys(props.file.metadata.actions)} 
+                addActionCallback={props.addActionCallback}
+                editActionCallback={props.editActionCallback}
+            />
         </Card>
     );
 }

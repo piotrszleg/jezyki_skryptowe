@@ -15,26 +15,45 @@ const Transition = React.forwardRef(function Transition(props, ref) {
 export default class CodeEditor extends React.Component {
     constructor(props) {
         super(props);
-        this.state = {
+        this.state = this.START_STATE = {
             open: true,
             name: "Clean",
             code: "rm *.temp",
-            isNew: false,
+            isNew: true,
+            callback:null
         };
     }
 
-    open() {
+    openNew(callback){
         this.setState((state) => ({
             ...state,
+            name:this.START_STATE.name,
+            code:this.START_STATE.code,
+            isNew: true,
             open: true,
+            callback: callback
         }));
     }
 
-    close() {
+    openForEdit(name, code, callback) {
+        this.setState((state) => ({
+            ...state,
+            name:name,
+            code:code,
+            isNew: false,
+            open: true,
+            callback: callback
+        }));
+    }
+
+    close(cancelled) {
         this.setState((state) => ({
             ...state,
             open: false,
         }));
+        if(!cancelled && this.state.callback){
+            this.state.callback(this.state);
+        }
     }
 
     setCode(event) {
@@ -56,13 +75,12 @@ export default class CodeEditor extends React.Component {
                 maxWidth={"md"}
             >
                 <DialogTitle hidden={this.state.isNew} id="form-dialog-title">
-                    Code of action "Clean"
+                    Code of action "{this.state.name}"
                 </DialogTitle>
                 <DialogContent>
                     <DialogContentText>{this.props.reason}</DialogContentText>
                     {this.state.isNew ? (
                         <TextField
-                            hidden={!this.state.isNew}
                             margin="dense"
                             id="name"
                             label="Action Name"
@@ -85,14 +103,14 @@ export default class CodeEditor extends React.Component {
                     />
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={this.close.bind(this)} color="primary">
+                    <Button onClick={this.close.bind(this, true)} color="primary">
                         {this.state.isNew ? "Cancel Adding" : "Delete"}
                     </Button>
-                    <Button onClick={this.close.bind(this)} color="primary">
+                    <Button onClick={this.close.bind(this, false)} color="primary">
                         Save and close
                     </Button>
                     {!this.state.isNew ? (
-                        <Button onClick={this.close.bind(this)} color="primary">
+                        <Button onClick={this.close.bind(this, false)} color="primary">
                             Run
                         </Button>
                     ) : null}

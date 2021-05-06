@@ -31,6 +31,7 @@ class Page extends React.Component {
         this.setPasswordDialog=React.createRef();
         this.loginDialog=React.createRef();
         this.thumbnails=React.createRef();
+        this.codeEditor=React.createRef();
 
         this.confirmationDialog=React.createRef();
         const savedThis=this;
@@ -163,7 +164,7 @@ class Page extends React.Component {
                 <CssBaseline />
                 <Topbar />
                 <ConfirmationDialog ref={this.confirmationDialog} />
-                <CodeEditor />
+                <CodeEditor ref={this.codeEditor}/>
                 <PasswordDialog 
                     ref={this.passwordDialog} 
                     callback={this.onPasswordInput.bind(this)} 
@@ -186,7 +187,11 @@ class Page extends React.Component {
                         : <Thumbnails 
                             isProcessed={name=>this.isProcessed(this.state.selectedFolder, name)} 
                             folders={this.getItemsList()} 
-                            actionCallback={(name, action)=>this.sendAction(this.state.selectedFolder, name, action)} />)
+                            actionCallback={(name, action)=>this.sendAction(this.state.selectedFolder, name, action)}
+                            addActionCallback={()=>this.codeEditor.current.openNew(state=>promiseIpc.send("newAction", this.state.selectedFolder, name, state.name, state.code)) } 
+                            editActionCallback={name=>this.codeEditor.current.openForEdit(name, "", state=>promiseIpc.send("editAction", this.state.selectedFolder, name, state.name, state.code)) } 
+                            
+                            />)
                     }
                 </main>
             </div>

@@ -17,7 +17,6 @@ function forAdditionalFiles(basePath:string, callback:(file:string)=>void){
 
 function extractMegaID(url:string){
     const splitted=url.split("/");
-    console.log(splitted[splitted.length-1]);
     return splitted[splitted.length-1];
 }
 

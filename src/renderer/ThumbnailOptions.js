@@ -22,6 +22,10 @@ export default class ThumbnailOptions extends React.Component {
         this.setState((state) => ({ anchor: state.anchor ? null : anchor }));
     }
 
+    close(){
+        this.setState((state) => ({ anchor: null }));
+    }
+
     render() {
         const open = Boolean(this.state.anchor);
         const id = open ? "simple-popover" : undefined;
@@ -49,9 +53,9 @@ export default class ThumbnailOptions extends React.Component {
                         variant="text"
                     >
                         {this.props.elements.map((e, i)=>
-                            <Button key={i}>{e}</Button>
+                            <Button key={i} onClick={()=>{this.props.editActionCallback(e); this.close(); }} >{e}</Button>
                         )}
-                        <Button>Add action</Button>
+                        <Button onClick={()=>{this.props.addActionCallback();this.close();} }>Add action</Button>
                     </ButtonGroup>
                 </Popover>
             </div>

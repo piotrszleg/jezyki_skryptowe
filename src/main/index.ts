@@ -5,7 +5,7 @@ import { format as formatUrl } from "url";
 import FsStorage from "./fs_storage";
 import {MegajsStorage, MegaJsStorageConfiguration} from "./mega_storage";
 import Storage from "./storage_";
-import { app, BrowserWindow, Notification, IpcMainEvent, WebContents } from "electron";
+import { app, BrowserWindow, Notification, IpcMainEvent } from "electron";
 import { createDisplayedFolders, DisplayedFilesStructure } from "./displayed_folders";
 import Settings from "./settings";
 import promiseIpc from 'electron-promise-ipc';

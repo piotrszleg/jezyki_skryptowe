@@ -16,10 +16,10 @@ export default class CodeEditor extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            open: false,
+            open: true,
             name: "Clean",
             code: "rm *.temp",
-            isNew: true,
+            isNew: false,
         };
     }
 
@@ -91,7 +91,7 @@ export default class CodeEditor extends React.Component {
                     <Button onClick={this.close.bind(this)} color="primary">
                         Save and close
                     </Button>
-                    {this.state.isNew ? (
+                    {!this.state.isNew ? (
                         <Button onClick={this.close.bind(this)} color="primary">
                             Run
                         </Button>

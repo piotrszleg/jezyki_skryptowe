@@ -13,6 +13,7 @@ import ThumbnailOptions from "./ThumbnailOptions.js";
 export default function Thumbnail(props) {
     const classes = getClasses();
     const options=React.createRef();
+    
     return (
         <Card className={classes.thumbnail} onContextMenu={ev=>options.current.switchOpen(ev.currentTarget)}>
             <CardActionArea>
@@ -46,7 +47,7 @@ export default function Thumbnail(props) {
                 )}   
             </CardActions>
             <LinearProgress hidden={!props.isProcessed(props.file.name)}/>
-            <ThumbnailOptions ref={options} />
+            <ThumbnailOptions ref={options} elements={Object.keys(props.file.metadata.actions)} />
         </Card>
     );
 }

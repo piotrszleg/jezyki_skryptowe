@@ -48,9 +48,9 @@ export default class ThumbnailOptions extends React.Component {
                         aria-label="vertical contained primary button group"
                         variant="text"
                     >
-                        <Button>Train</Button>
-                        <Button>On Download</Button>
-                        <Button>On Upload</Button>
+                        {this.props.elements.map((e, i)=>
+                            <Button key={i}>{e}</Button>
+                        )}
                         <Button>Add action</Button>
                     </ButtonGroup>
                 </Popover>

@@ -3,42 +3,9 @@ import {promisify} from "util";
 import {CATEGORIES, FileOrFolder, FilesStructure} from "./file_commons";
 import { join } from "path";
 import Storage from "./storage_";
-import crypto from "crypto";
 
 const readdirPromise = promisify(fs.readdir);
 const statPromise = promisify(fs.stat);
-
-function readFileInParts<D>(path: string, callback: (data:D) => void){
-    return new Promise((resolve, reject) =>{
-        const stream = fs.createReadStream(path);
-
-        stream.on('data', data=>callback(data));
-
-        stream.on('end', resolve);
-    });
-}
-
-async function directoryChecksum(path: string){
-    const result= crypto.createHash('md5');
-
-    async function inner(visitedPath: string){
-        const files = await readdirPromise(visitedPath);
-        for(let file of files){
-            const filePath=join(visitedPath, file);
-            
-            if((await statPromise(filePath)).isFile()){
-                await readFileInParts(filePath, 
-                    (data:string)=>result.update(data, 'utf8'));
-            } else {
-                // recursively checksum files in subdirectories
-                await inner(filePath);
-            }
-        }
-    }
-    inner(path);
-
-    return result.digest('hex');
-}
 
 export default class FsStorage implements Storage<string> {
     path:string|null=null;

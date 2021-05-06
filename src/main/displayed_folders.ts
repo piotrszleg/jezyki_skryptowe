@@ -1,9 +1,23 @@
 import {FilesStructure, CATEGORIES} from "./file_commons";
 import fs from "fs";
 import Jimp from "Jimp";
-
+import YAML from "yaml";
+import { v4 as uuid } from 'uuid';
 
 type Action = "Train" | "Upload" | "Download";
+
+export class FileMetadata {
+    uuid: string = uuid();
+    description: string = "";
+    actions:Map<string, string> = new Map<string, string>(
+        ["Train",
+        "onAfterDownload",
+        "onApplicationStarts",
+        "onBeforeUpload",
+        "onBeforeShown"]
+        .map(e=>[e, ""])
+    );
+}
 
 class DisplayedFile {
     name:string;
@@ -11,13 +25,15 @@ class DisplayedFile {
     description:string;
     image:string;
     actions:Action[];
+    metadata:FileMetadata;
 
-    constructor(name:string, description:string, image:string, mdate:Date, actions:Action[]){
+    constructor(name:string, image:string, mdate:Date, actions:Action[], metadata:FileMetadata){
         this.name = name;
-        this.description = description;
+        this.description = metadata.description;
         this.image = image;
         this.mdate = mdate;
         this.actions = actions;
+        this.metadata = metadata;
     }
 }
 
@@ -46,13 +62,18 @@ async function getThumbnail(file:string){
         .reduce((prev, curr)=>curr ? curr : prev);
 }
 
-function getDescription(file:string) {
-    const path = file+".txt";
+function getMetadata(file:string) {
+    const path = file+".yaml";
     if(fs.existsSync(path) && fs.statSync(path).isFile()){
-        return fs.readFileSync(path).toString();
-    } else {
-        return "";
+        try {
+            return <FileMetadata>YAML.parse(fs.readFileSync(path).toString());
+        } catch (e) {
+            console.log(e);
+        }
     }
+    const newMetadata = new FileMetadata();
+    fs.writeFileSync(path, YAML.stringify(newMetadata));
+    return newMetadata;
 }
 
 // https://www.w3resource.com/javascript-exercises/javascript-date-exercise-44.php
@@ -72,7 +93,7 @@ export async function createDisplayedFolders(localFiles: FilesStructure, remoteF
         if(localCategoryFiles!=undefined){
             for(let file of localCategoryFiles){
                 // file is in local storage
-                const displayedFile=new DisplayedFile(file.name, getDescription(file.path), "", file.mdate, ["Train", "Upload"]);
+                const displayedFile=new DisplayedFile(file.name, "", file.mdate, ["Train", "Upload"], getMetadata(file.path));
                 promises.push(getThumbnail(file.path).then(encodedImage=>displayedFile.image=encodedImage));
                 categoryMap.set(file.name, displayedFile);
             }
@@ -89,12 +110,12 @@ export async function createDisplayedFolders(localFiles: FilesStructure, remoteF
                         displayedFile.actions=displayedFile.actions.filter(a=>a!="Upload");
                     } else if(displayedFile.mdate<file.mdate){
                         // remote has newer version of the file 
-                        displayedFile=new DisplayedFile(file.name, "", "", file.mdate, ["Train", "Download"]);
+                        displayedFile=new DisplayedFile(file.name, displayedFile.image, file.mdate, ["Train", "Download"], displayedFile.metadata);
                         categoryMap.set(file.name, displayedFile);
                     }
                 } else {
                     // file is only on remote 
-                    displayedFile=new DisplayedFile(file.name, "", "", file.mdate, ["Download"]);
+                    displayedFile=new DisplayedFile(file.name, "", file.mdate, ["Download"], new FileMetadata());
                     categoryMap.set(file.name, displayedFile);
                 }
             }

@@ -1,4 +1,4 @@
-import { Storage as MegajsPackageStorage, MutableFile } from 'megajs';
+import { Storage as MegajsPackageStorage, MutableFile, File as MFile } from 'megajs';
 import {CATEGORIES, FileOrFolder, FilesStructure} from "./file_commons";
 import {EventEmitter} from "events";
 import Storage from "./storage_";
@@ -6,11 +6,12 @@ import { join } from "path";
 import fs from "fs";
 import archiver from "archiver";
 import unzipper from "unzipper";
+import Jimp from "Jimp";
 
 const BIG_FILE_SIZE=3000000;
 
 const THUMBNAIL_EXTENSIONS = [".png",".jpeg", ".jpg"];
-const ADDITIONAL_FILES_EXTENSIONS = THUMBNAIL_EXTENSIONS.concat([".txt"]);
+const ADDITIONAL_FILES_EXTENSIONS = THUMBNAIL_EXTENSIONS.concat([".yaml"]);
 function forAdditionalFiles(basePath:string, callback:(file:string)=>void){
     ADDITIONAL_FILES_EXTENSIONS.forEach(ext=>callback(basePath+ext));
 }
@@ -73,6 +74,35 @@ class Resolver {
             }
         }
     }
+}
+
+async function base64Encode(buffer:Buffer) {
+    try {
+        const image = await Jimp.read(buffer);
+        await image.resize(100, 100);
+        await image.quality(0.5);
+            
+        return await image.getBase64Async(Jimp.MIME_PNG);
+    } catch(err){
+        console.log("Error while processing image:\n%s", err);
+        return "";
+    }
+}
+
+function getThumbnail(folder:MFile, basename:string){
+    return new Promise<string>((resolve, reject) =>{
+        const file=folder.children.find(f=>f.name.includes(basename) && THUMBNAIL_EXTENSIONS.some(e=>f.name.endsWith(e)));
+        if(file){
+            const stream=file.download();
+            var bufs:Buffer[] = [];
+            stream.on('data', function(d){ bufs.push(d); });
+            stream.on('end', function(){
+                console.log(basename+"end");
+                var buf = Buffer.concat(bufs);
+                base64Encode(buf).then(resolve);
+            });
+        }
+    })
 }
 
 export class MegajsStorage implements Storage<MegaJsStorageConfiguration> {
@@ -276,6 +306,7 @@ export class MegajsStorage implements Storage<MegaJsStorageConfiguration> {
     }
     getFolders():Promise<FilesStructure>{
         return new Promise<FilesStructure>( (resolve, reject)=>{
+            const awaited:Promise<any>[]=[];
             if(this.storage==null){
                 reject("You must call connect before getFolders.");
             } else {
@@ -290,19 +321,27 @@ export class MegajsStorage implements Storage<MegaJsStorageConfiguration> {
                         const zipExtension=".zip";
                         if(category_folder!=undefined && category_folder.children!=undefined){
                             result.set(category, mapFilter(category_folder.children,
-                                f=>f.name.endsWith(zipExtension)
-                                    ? new FileOrFolder(
-                                    (<any>f.attributes).checksum||f.name,
-                                    f.name.substring(0, f.name.length-zipExtension.length), 
-                                    "https://mega.nz/fm/"+f.nodeId, 
-                                    new Date(f.timestamp*1000))
-                                    : null
-                                ));
+                                f=>{
+                                    if(f.name.endsWith(zipExtension)){
+                                        const basename=f.name.substring(0, f.name.length-zipExtension.length);
+                                        const thumbnail=getThumbnail(category_folder, basename);
+                                        awaited.push(thumbnail);
+                                        const result = new FileOrFolder(
+                                            (<any>f.attributes).checksum||f.name,
+                                            basename,
+                                            "https://mega.nz/fm/"+f.nodeId, 
+                                            new Date(f.timestamp*1000),
+                                            "");
+                                        thumbnail.then(v=>result.image=v);
+                                        return result;
+                                    } 
+                                    else return null;
+                                }));
                         } else {
                             result.set(category, []);
                         }
                     })
-                    resolve(result);
+                    Promise.all(awaited).then(_=>resolve(result));
                 } else {
                     reject("Configured root folder doesn't exist.")
                 }

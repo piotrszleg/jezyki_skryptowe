@@ -45,7 +45,7 @@ export default class FsStorage implements Storage<string> {
                         }
                         if(stats.isDirectory()){
                             // list only directories
-                            return new FileOrFolder("asad", file, fullFileName, stats.mtime);
+                            return new FileOrFolder("asad", file, fullFileName, stats.mtime, "");
                         } else {
                             return null;
                         }

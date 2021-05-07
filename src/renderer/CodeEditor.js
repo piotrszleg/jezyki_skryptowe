@@ -16,7 +16,7 @@ export default class CodeEditor extends React.Component {
     constructor(props) {
         super(props);
         this.state = this.START_STATE = {
-            open: true,
+            open: false,
             name: "Clean",
             code: "rm *.temp",
             isNew: true,

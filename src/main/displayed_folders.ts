@@ -110,12 +110,12 @@ export async function createDisplayedFolders(localFiles: FilesStructure, remoteF
                         displayedFile.actions=displayedFile.actions.filter(a=>a!="Upload");
                     } else if(displayedFile.mdate<file.mdate){
                         // remote has newer version of the file 
-                        displayedFile=new DisplayedFile(file.name, displayedFile.image, file.mdate, ["Train", "Download"], displayedFile.metadata);
+                        displayedFile=new DisplayedFile(file.name, file.image, file.mdate, ["Train", "Download"], displayedFile.metadata);
                         categoryMap.set(file.name, displayedFile);
                     }
                 } else {
                     // file is only on remote 
-                    displayedFile=new DisplayedFile(file.name, "", file.mdate, ["Download"], new FileMetadata());
+                    displayedFile=new DisplayedFile(file.name, file.image, file.mdate, ["Download"], new FileMetadata());
                     categoryMap.set(file.name, displayedFile);
                 }
             }

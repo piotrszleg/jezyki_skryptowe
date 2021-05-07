@@ -10,11 +10,14 @@ export class FileOrFolder {
     name: string;
     path:string;
     mdate:Date;
-    constructor(checksum:string, name:string, path:string, mdate:Date){
+    image:string;
+
+    constructor(checksum:string, name:string, path:string, mdate:Date, image:string){
         this.checksum=checksum;
         this.name=name;
         this.path=path;
         this.mdate=mdate;
+        this.image=image;
     }
 }
 

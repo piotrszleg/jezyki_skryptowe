@@ -82,6 +82,7 @@ async function main(webContents:Electron.WebContents) {
     interface CredentialsFormData {
         email:string;
         password:string;
+        remotePath:string;
         save:boolean;
     }
 
@@ -103,9 +104,11 @@ async function main(webContents:Electron.WebContents) {
             if(formData.save){
                 settings.megaEmail=formData.email;
                 settings.megaPassword=formData.password;
+                settings.remotePath=formData.remotePath;
             }
             credentials.email=formData.email;
             credentials.password=formData.password;
+            credentials.remoteFolder=formData.remotePath;
         } else {
             if(!settings.autoLogin){
                 console.log("Rejecting auto login.");

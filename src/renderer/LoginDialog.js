@@ -21,15 +21,17 @@ export default class FormDialog extends React.Component {
             open: false,
             email: "",
             password: "",
+            remotePath: "",
             save: false,
         };
     }
 
-    setCredentials(email, password) {
+    setCredentials(email, password, remotePath) {
         this.setState(state => ({
             ...state,
             email: email,
-            password: password
+            password: password,
+            remotePath:remotePath
         }));
     }
 
@@ -54,6 +56,10 @@ export default class FormDialog extends React.Component {
 
     setPassword(event) {
         this.setState((state) => ({ ...state, password: event.target.value }));
+    }
+
+    setRemotePath(event) {
+        this.setState((state) => ({ ...state, remotePath: event.target.value }));
     }
 
     setSave(event) {
@@ -88,6 +94,15 @@ export default class FormDialog extends React.Component {
                         type="password"
                         value={this.state.password}
                         onChange={this.setPassword.bind(this)}
+                        fullWidth
+                    />
+                    <TextField
+                        autoFocus
+                        margin="dense"
+                        id="name"
+                        label="Remote Folder URL"
+                        value={this.state.remotePath}
+                        onChange={this.setRemotePath.bind(this)}
                         fullWidth
                     />
                     <br />

@@ -59,7 +59,7 @@ class Page extends React.Component {
     async updateLoginDialog(){
         const settings=await promiseIpc.send("getSettings");
         if(this.loginDialog.current && settings){
-            this.loginDialog.current.setCredentials(settings.megaEmail, settings.megaPassword);
+            this.loginDialog.current.setCredentials(settings.megaEmail, settings.megaPassword, settings.remotePath);
         }
     }
 

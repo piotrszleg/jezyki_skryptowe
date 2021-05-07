@@ -140,6 +140,12 @@ export default class Settings {
     get remotePath() {
         return this.document?.remotePath || DEFAULT_SETTINGS.remotePath;
     }
+    set remotePath(remotePath) {
+        if (this.document) {
+            this.document.remotePath = remotePath;
+            this.save();
+        }
+    }
     get localPath() {
         return this.document?.localPath || DEFAULT_SETTINGS.localPath;
     }

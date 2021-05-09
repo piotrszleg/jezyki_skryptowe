@@ -82,7 +82,8 @@ async function base64Encode(buffer:Buffer) {
         await image.resize(100, 100);
         await image.quality(0.5);
             
-        return await image.getBase64Async(Jimp.MIME_PNG);
+        const encoded=await image.getBase64Async(Jimp.MIME_PNG);
+        return encoded;
     } catch(err){
         console.log("Error while processing image:\n%s", err);
         return "";
@@ -97,10 +98,11 @@ function getThumbnail(folder:MFile, basename:string){
             var bufs:Buffer[] = [];
             stream.on('data', function(d){ bufs.push(d); });
             stream.on('end', function(){
-                console.log(basename+"end");
                 var buf = Buffer.concat(bufs);
                 base64Encode(buf).then(resolve);
             });
+        } else {
+            resolve("");
         }
     })
 }

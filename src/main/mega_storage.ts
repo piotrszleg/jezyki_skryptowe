@@ -1,12 +1,11 @@
 import { Storage as MegajsPackageStorage, MutableFile, File as MFile } from 'megajs';
-import {CATEGORIES, FileOrFolder, FilesStructure} from "./file_commons";
+import {CATEGORIES, FileOrFolder, FilesStructure, base64Encode} from "./file_commons";
 import {EventEmitter} from "events";
 import Storage from "./storage_";
 import { join } from "path";
 import fs from "fs";
 import archiver from "archiver";
 import unzipper from "unzipper";
-import Jimp from "Jimp";
 
 const BIG_FILE_SIZE=3000000;
 
@@ -76,20 +75,6 @@ class Resolver {
     }
 }
 
-async function base64Encode(buffer:Buffer) {
-    try {
-        const image = await Jimp.read(buffer);
-        await image.resize(100, 100);
-        await image.quality(0.5);
-            
-        const encoded=await image.getBase64Async(Jimp.MIME_PNG);
-        return encoded;
-    } catch(err){
-        console.log("Error while processing image:\n%s", err);
-        return "";
-    }
-}
-
 function getThumbnail(folder:MFile, basename:string){
     return new Promise<string>((resolve, reject) =>{
         const file=folder.children.find(f=>f.name.includes(basename) && THUMBNAIL_EXTENSIONS.some(e=>f.name.endsWith(e)));
@@ -99,7 +84,7 @@ function getThumbnail(folder:MFile, basename:string){
             stream.on('data', function(d){ bufs.push(d); });
             stream.on('end', function(){
                 var buf = Buffer.concat(bufs);
-                base64Encode(buf).then(resolve);
+                base64Encode(buf).then(value=>value ? resolve(value) : resolve(""));
             });
         } else {
             resolve("");

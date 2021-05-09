@@ -1,6 +1,5 @@
 import {FilesStructure, CATEGORIES} from "./file_commons";
 import fs from "fs";
-import Jimp from "Jimp";
 import YAML from "yaml";
 import { v4 as uuid } from 'uuid';
 
@@ -39,29 +38,6 @@ class DisplayedFile {
 
 export type DisplayedFilesStructure = Map<string, DisplayedFile[]>;
 
-async function base64Encode(file:string) {
-    try {
-        if(fs.existsSync(file) && fs.statSync(file).isFile()){
-            const image = await Jimp.read(fs.readFileSync(file));
-            await image.resize(100, 100);
-            await image.quality(0.5);
-            
-            return await image.getBase64Async(Jimp.MIME_PNG);
-        }
-    } catch(err){
-        console.log("Error while processing image %s:\n%s", file, err);
-    }
-    return null;
-}
-
-async function getThumbnail(file:string){
-    return <string>(await Promise.all([".png", ".jpeg", ".jpg"]
-        // try encoding the image to base64
-        .map(async ext=>await base64Encode(file+ext))))
-        // return first success
-        .reduce((prev, curr)=>curr ? curr : prev);
-}
-
 function getMetadata(file:string) {
     const path = file+".yaml";
     if(fs.existsSync(path) && fs.statSync(path).isFile()){
@@ -82,10 +58,9 @@ function diffMinutes(dt2:Date, dt1:Date) {
     return Math.abs(Math.round(diff));
  }
 
-export async function createDisplayedFolders(localFiles: FilesStructure, remoteFiles: FilesStructure) : Promise<DisplayedFilesStructure> {
+export function createDisplayedFolders(localFiles: FilesStructure, remoteFiles: FilesStructure) : DisplayedFilesStructure {
     const result=new Map<string, DisplayedFile[]>();
-    const promises:Promise<any>[]=[];
-
+    
     for(let category of CATEGORIES){
         const categoryMap = new Map<string, DisplayedFile>();
 
@@ -93,8 +68,7 @@ export async function createDisplayedFolders(localFiles: FilesStructure, remoteF
         if(localCategoryFiles!=undefined){
             for(let file of localCategoryFiles){
                 // file is in local storage
-                const displayedFile=new DisplayedFile(file.name, "", file.mdate, ["Train", "Upload"], getMetadata(file.path));
-                promises.push(getThumbnail(file.path).then(encodedImage=>displayedFile.image=encodedImage));
+                const displayedFile=new DisplayedFile(file.name, file.image, file.mdate, ["Train", "Upload"], getMetadata(file.path));
                 categoryMap.set(file.name, displayedFile);
             }
         }
@@ -123,7 +97,6 @@ export async function createDisplayedFolders(localFiles: FilesStructure, remoteF
         
         result.set(category, [...categoryMap.values()]);
     }
-    await Promise.all(promises);
 
     return result;
 }

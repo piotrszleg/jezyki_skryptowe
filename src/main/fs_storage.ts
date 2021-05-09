@@ -1,11 +1,26 @@
 import * as fs from "fs";
 import {promisify} from "util";
-import {CATEGORIES, FileOrFolder, FilesStructure} from "./file_commons";
+import {CATEGORIES, FileOrFolder, FilesStructure, base64Encode} from "./file_commons";
 import { join } from "path";
 import Storage from "./storage_";
 
 const readdirPromise = promisify(fs.readdir);
 const statPromise = promisify(fs.stat);
+
+async function getThumbnail(file:string){
+    return (await Promise.all([".png", ".jpeg", ".jpg"]
+        // try encoding the image to base64
+        .map(async ext=>{
+            const path=file+ext;
+            if(fs.existsSync(path) && fs.statSync(path).isFile()){
+                return await base64Encode(fs.readFileSync(path));
+            } else {
+                return null;
+            }
+        })))
+        // return first success
+        .reduce((prev, curr)=>curr ? curr : prev) || "";
+}
 
 export default class FsStorage implements Storage<string> {
     path:string|null=null;
@@ -34,10 +49,10 @@ export default class FsStorage implements Storage<string> {
                     const categoryPath=join(<string>this.path, category)
                     const files=await readdirPromise(categoryPath);
                     const filesData:FileOrFolder[]=<FileOrFolder[]>(await Promise.all(files.map(async (file:string)=>{
-                        const fullFileName=join(categoryPath, file);
+                        const filePath=join(categoryPath, file);
                         let stats;
                         try {
-                            stats=await statPromise(fullFileName);
+                            stats=await statPromise(filePath);
                         } catch(err){
                             // stat error, the file was deleted in the process of scanning, skip file
                             // console.log(err);
@@ -45,7 +60,7 @@ export default class FsStorage implements Storage<string> {
                         }
                         if(stats.isDirectory()){
                             // list only directories
-                            return new FileOrFolder("asad", file, fullFileName, stats.mtime, "");
+                            return new FileOrFolder("asad", file, filePath, stats.mtime, await getThumbnail(filePath));
                         } else {
                             return null;
                         }

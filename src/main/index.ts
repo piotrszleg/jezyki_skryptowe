@@ -42,7 +42,7 @@ async function loadAndMergeFolders(fsStorage:FsStorage, megaStorage:MegajsStorag
         [fsStorage.getFolders(),
         megaStorage.getFolders() ]);
 
-    const displayedFiles=await createDisplayedFolders(localFiles, remoteFiles);
+    const displayedFiles=createDisplayedFolders(localFiles, remoteFiles);
     return displayedFiles;
 }
 

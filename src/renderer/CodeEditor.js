@@ -7,6 +7,7 @@ import DialogContent from "@material-ui/core/DialogContent";
 import DialogContentText from "@material-ui/core/DialogContentText";
 import DialogTitle from "@material-ui/core/DialogTitle";
 import Slide from "@material-ui/core/Slide";
+import promiseIpc from "electron-promise-ipc";
 
 const Transition = React.forwardRef(function Transition(props, ref) {
     return <Slide direction="up" ref={ref} {...props} />;
@@ -17,43 +18,61 @@ export default class CodeEditor extends React.Component {
         super(props);
         this.state = this.START_STATE = {
             open: false,
-            name: "Clean",
+            action: "Clean",
             code: "rm *.temp",
             isNew: true,
-            callback:null
+            actionSender: null,
         };
     }
 
-    openNew(callback){
+    openNew(actionSender) {
         this.setState((state) => ({
             ...state,
-            name:this.START_STATE.name,
-            code:this.START_STATE.code,
+            action: this.START_STATE.action,
+            code: this.START_STATE.code,
             isNew: true,
             open: true,
-            callback: callback
+            actionSender: actionSender,
         }));
     }
 
-    openForEdit(name, code, callback) {
+    openForEdit(action, code, actionSender) {
         this.setState((state) => ({
             ...state,
-            name:name,
-            code:code,
+            action: action,
+            code: code,
             isNew: false,
             open: true,
-            callback: callback
+            actionSender: actionSender,
         }));
     }
 
-    close(cancelled) {
+    close() {
         this.setState((state) => ({
             ...state,
             open: false,
         }));
-        if(!cancelled && this.state.callback){
-            this.state.callback(this.state);
-        }
+    }
+
+    onSave() {
+        this.state.actionSender(this.state.isNew ? "addAction" : "editAction", [
+            this.state.action,
+            this.state.code,
+        ]);
+        this.close();
+    }
+
+    onRun() {
+        this.state.actionSender("runAction", [
+            this.state.action,
+            this.state.code,
+        ]);
+        this.close();
+    }
+
+    onDelete() {
+        this.state.actionSender("deleteAction", this.state.action);
+        this.close();
     }
 
     setCode(event) {
@@ -61,7 +80,7 @@ export default class CodeEditor extends React.Component {
     }
 
     setName(event) {
-        this.setState((state) => ({ ...state, name: event.target.value }));
+        this.setState((state) => ({ ...state, action: event.target.value }));
     }
 
     render() {
@@ -75,16 +94,16 @@ export default class CodeEditor extends React.Component {
                 maxWidth={"md"}
             >
                 <DialogTitle hidden={this.state.isNew} id="form-dialog-title">
-                    Code of action "{this.state.name}"
+                    Code of action "{this.state.action}"
                 </DialogTitle>
                 <DialogContent>
                     <DialogContentText>{this.props.reason}</DialogContentText>
                     {this.state.isNew ? (
                         <TextField
                             margin="dense"
-                            id="name"
+                            id="action"
                             label="Action Name"
-                            value={this.state.name}
+                            value={this.state.action}
                             onChange={this.setName.bind(this)}
                             fullWidth
                             variant="outlined"
@@ -103,14 +122,32 @@ export default class CodeEditor extends React.Component {
                     />
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={this.close.bind(this, true)} color="primary">
-                        {this.state.isNew ? "Cancel Adding" : "Delete"}
-                    </Button>
-                    <Button onClick={this.close.bind(this, false)} color="primary">
+                    {this.state.isNew ? (
+                        <Button
+                            onClick={this.close.bind(this)}
+                            color="primary"
+                        >
+                            Cancel Adding
+                        </Button>
+                    ) : (
+                        <Button
+                            onClick={this.onDelete.bind(this)}
+                            color="primary"
+                        >
+                            Delete
+                        </Button>
+                    )}
+                    <Button
+                        onClick={this.onSave.bind(this)}
+                        color="primary"
+                    >
                         Save and close
                     </Button>
                     {!this.state.isNew ? (
-                        <Button onClick={this.close.bind(this, false)} color="primary">
+                        <Button
+                            onClick={this.onRun.bind(this)}
+                            color="primary"
+                        >
                             Run
                         </Button>
                     ) : null}

@@ -115,10 +115,13 @@ class Page extends React.Component {
         return this.state.processedFolders.some(e=>e.category==category && e.name==name);
     }
 
-    async sendAction(category, name, action){
+    async sendAction(category, name, action, args=undefined){
         this.setState(state=>({...state, processedFolders:state.processedFolders.concat({category:category, name:name})}));
         console.log(`Requested action ${action} for '${category}/${name}'`);
-        await promiseIpc.send("action", category, name, action);
+        if(args){
+            console.log("With arguments:"+args);
+        }
+        await promiseIpc.send("action", category, name, action, args);
         console.log("Action finished.");
         this.setState(state=>({...state, processedFolders:state.processedFolders.filter(e=>!(e.category==category && e.name==name))}));
     }
@@ -188,8 +191,9 @@ class Page extends React.Component {
                             isProcessed={name=>this.isProcessed(this.state.selectedFolder, name)} 
                             folders={this.getItemsList()} 
                             actionCallback={(name, action)=>this.sendAction(this.state.selectedFolder, name, action)}
-                            addActionCallback={()=>this.codeEditor.current.openNew(state=>promiseIpc.send("newAction", this.state.selectedFolder, name, state.name, state.code)) } 
-                            editActionCallback={name=>this.codeEditor.current.openForEdit(name, "", state=>promiseIpc.send("editAction", this.state.selectedFolder, name, state.name, state.code)) } 
+
+                            addActionCallback={name=>this.codeEditor.current.openNew((type, args)=>this.sendAction(this.state.selectedFolder, name, type, args))} 
+                            editActionCallback={(name, action)=>this.codeEditor.current.openForEdit(action, "", (type, args)=>this.sendAction(this.state.selectedFolder, name, type, args)) } 
                             
                             />)
                     }

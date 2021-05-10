@@ -61,7 +61,6 @@ export function createDisplayedFolders(localFiles: FilesStructure, remoteFiles: 
                     }
                 } else {
                     // file is only on remote 
-                    console.log(`only on remote ${file.name} ${file.metadata.description}`);
                     displayedFile=new DisplayedFile(file.name, file.image, file.mdate, ["Download"], file.metadata, false);
                     categoryMap.set(file.name, displayedFile);
                 }

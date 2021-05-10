@@ -53,9 +53,9 @@ export default class ThumbnailOptions extends React.Component {
                         variant="text"
                     >
                         {this.props.elements.map((e, i)=>
-                            <Button disabled={!this.props.active} key={i} onClick={()=>{this.props.editActionCallback(e); this.close(); }} >{e}</Button>
+                            <Button disabled={!this.props.active} key={i} onClick={()=>{console.log(e); this.props.editActionCallback(e); this.close(); }} >{e}</Button>
                         )}
-                        <Button disabled={!this.props.active} onClick={()=>{this.props.addActionCallback();this.close();} }>Add action</Button>
+                        <Button disabled={!this.props.active} onClick={()=>{this.props.addActionCallback(); this.close();} }>Add action</Button>
                     </ButtonGroup>
                 </Popover>
             </div>

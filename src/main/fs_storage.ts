@@ -47,14 +47,11 @@ async function getThumbnail(file:string){
 export default class FsStorage implements Storage<string> {
     path:string|null=null;
     async handleAction(action:string, folder:string, name:string, args:unknown){
-        console.log(0);
         if(["addAction", "editAction", "deleteAction"].includes(action)){
-            console.log(1);
             const path=join(<string>this.path, folder, name);
             const metadata=getMetadata(path);
             if(action=="addAction" || action=="editAction"){
                 metadata.actions[(<string[]>args)[0]]= (<string[]>args)[1];
-                console.log(0);
             } else if(action=="deleteAction"){
                 delete metadata.actions[(<string[]>args)[0]];
             }

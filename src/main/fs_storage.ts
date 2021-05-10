@@ -1,11 +1,27 @@
 import * as fs from "fs";
 import {promisify} from "util";
-import {CATEGORIES, FileOrFolder, FilesStructure, base64Encode} from "./file_commons";
+import {CATEGORIES, FileOrFolder, FilesStructure, base64Encode, FileMetadata} from "./file_commons";
 import { join } from "path";
 import Storage from "./storage_";
+import YAML from "yaml";
 
 const readdirPromise = promisify(fs.readdir);
 const statPromise = promisify(fs.stat);
+
+function getMetadata(file:string) {
+    const path = file+".yaml";
+    if(fs.existsSync(path) && fs.statSync(path).isFile()){
+        try {
+            return <FileMetadata>YAML.parse(fs.readFileSync(path).toString());
+        } catch (e) {
+            console.log(`Error while parsing metadata of file ${file}`);
+            console.log(e);
+        }
+    }
+    const newMetadata = new FileMetadata();
+    fs.writeFileSync(path, YAML.stringify(newMetadata));
+    return newMetadata;
+}
 
 async function getThumbnail(file:string){
     return (await Promise.all([".png", ".jpeg", ".jpg"]
@@ -60,7 +76,7 @@ export default class FsStorage implements Storage<string> {
                         }
                         if(stats.isDirectory()){
                             // list only directories
-                            return new FileOrFolder("asad", file, filePath, stats.mtime, await getThumbnail(filePath));
+                            return new FileOrFolder(file, filePath, stats.mtime, await getThumbnail(filePath), getMetadata(filePath));
                         } else {
                             return null;
                         }

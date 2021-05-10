@@ -1,11 +1,12 @@
 import { Storage as MegajsPackageStorage, MutableFile, File as MFile } from 'megajs';
-import {CATEGORIES, FileOrFolder, FilesStructure, base64Encode} from "./file_commons";
+import {CATEGORIES, FileOrFolder, FilesStructure, base64Encode, FileMetadata} from "./file_commons";
 import {EventEmitter} from "events";
 import Storage from "./storage_";
 import { join } from "path";
 import fs from "fs";
 import archiver from "archiver";
 import unzipper from "unzipper";
+import YAML from "yaml";
 
 const BIG_FILE_SIZE=3000000;
 
@@ -88,6 +89,29 @@ function getThumbnail(folder:MFile, basename:string){
             });
         } else {
             resolve("");
+        }
+    })
+}
+
+function getMetadata(folder:MFile, basename:string){
+    return new Promise<FileMetadata>((resolve, reject) =>{
+        const file=folder.children.find(f=>f.name==basename+".yaml");
+        if(file){
+            const stream=file.download();
+            var bufs:Buffer[] = [];
+            stream.on('data', function(d){ bufs.push(d); });
+            stream.on('end', function(){
+                try {
+                    var buf = Buffer.concat(bufs);
+                    resolve(<FileMetadata>YAML.parse(buf.toString()));
+                } catch (e) {
+                    console.log(`Error while parsing metadata of file ${basename}`);
+                    console.log(e);
+                    resolve(new FileMetadata());
+                }
+            });
+        }else {
+            resolve(new FileMetadata());
         }
     })
 }
@@ -313,13 +337,15 @@ export class MegajsStorage implements Storage<MegaJsStorageConfiguration> {
                                         const basename=f.name.substring(0, f.name.length-zipExtension.length);
                                         const thumbnail=getThumbnail(category_folder, basename);
                                         awaited.push(thumbnail);
+                                        const metadata=getMetadata(category_folder, basename);
+                                        awaited.push(metadata);
                                         const result = new FileOrFolder(
-                                            (<any>f.attributes).checksum||f.name,
                                             basename,
                                             "https://mega.nz/fm/"+f.nodeId, 
                                             new Date(f.timestamp*1000),
-                                            "");
+                                            "",new FileMetadata());
                                         thumbnail.then(v=>result.image=v);
+                                        metadata.then(v=>result.metadata=v);
                                         return result;
                                     } 
                                     else return null;

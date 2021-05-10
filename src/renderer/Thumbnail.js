@@ -21,7 +21,8 @@ export default function Thumbnail(props) {
                     component="img"
                     alt={props.file.name}
                     height="140"
-                    image={props.file.image}
+                    image={props.file.image
+                            ||"https://user-images.githubusercontent.com/16499460/96162648-12445800-0f19-11eb-8139-bfdf3aa8bdc6.png"}
                     title={props.file.name}
                 />
                 <CardContent>

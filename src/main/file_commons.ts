@@ -1,4 +1,5 @@
 import Jimp from "Jimp";
+import { v4 as uuid } from 'uuid';
 
 export const CATEGORIES=[
     "datasets",
@@ -7,19 +8,32 @@ export const CATEGORIES=[
     "programs",
 ];
 
+export class FileMetadata {
+    uuid: string = uuid();
+    description: string = "";
+    actions:Map<string, string> = new Map<string, string>(
+        ["Train",
+        "onAfterDownload",
+        "onApplicationStarts",
+        "onBeforeUpload",
+        "onBeforeShown"]
+        .map(e=>[e, ""])
+    );
+}
+
 export class FileOrFolder {
-    checksum: string;
     name: string;
     path:string;
     mdate:Date;
     image:string;
+    metadata:FileMetadata;
 
-    constructor(checksum:string, name:string, path:string, mdate:Date, image:string){
-        this.checksum=checksum;
+    constructor(name:string, path:string, mdate:Date, image:string, metadata:FileMetadata){
         this.name=name;
         this.path=path;
         this.mdate=mdate;
         this.image=image;
+        this.metadata=metadata;
     }
 }
 

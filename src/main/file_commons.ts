@@ -8,17 +8,20 @@ export const CATEGORIES=[
     "programs",
 ];
 
+type Actions = {
+    [key: string]: string;
+  };
+
 export class FileMetadata {
     uuid: string = uuid();
     description: string = "";
-    actions:Map<string, string> = new Map<string, string>(
-        ["Train",
-        "onAfterDownload",
-        "onApplicationStarts",
-        "onBeforeUpload",
-        "onBeforeShown"]
-        .map(e=>[e, ""])
-    );
+    actions:Actions ={
+        "Train":"",
+        "onAfterDownload":"",
+        "onApplicationStarts":"",
+        "onBeforeUpload":"",
+        "onBeforeShown":""
+    }
 }
 
 export class FileOrFolder {

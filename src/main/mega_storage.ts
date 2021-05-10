@@ -123,7 +123,7 @@ export class MegajsStorage implements Storage<MegaJsStorageConfiguration> {
     localFolder:string="";
     confirmationDialog:Confirmation=async ()=>true;
 
-    async handleAction(action:string, folder:string, name:string){
+    async handleAction(action:string, folder:string, name:string, args:unknown){
         if(action=="Upload"){
             await this.upload(<string>folder, <string>name);
             return true;

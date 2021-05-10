@@ -193,7 +193,8 @@ class Page extends React.Component {
                             actionCallback={(name, action)=>this.sendAction(this.state.selectedFolder, name, action)}
 
                             addActionCallback={name=>this.codeEditor.current.openNew((type, args)=>this.sendAction(this.state.selectedFolder, name, type, args))} 
-                            editActionCallback={(name, action)=>this.codeEditor.current.openForEdit(action, "", (type, args)=>this.sendAction(this.state.selectedFolder, name, type, args)) } 
+                            editActionCallback={(name, action)=>this.codeEditor.current.openForEdit(action, 
+                                this.state.folders.get(this.state.selectedFolder).find(element=>element.name==name).metadata.actions[action], (type, args)=>this.sendAction(this.state.selectedFolder, name, type, args)) } 
                             
                             />)
                     }

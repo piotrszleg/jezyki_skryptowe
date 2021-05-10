@@ -28,12 +28,6 @@ function addStorageHooks(storage:Storage<any>, changeCallback:()=>void, showNoti
         storage.onChange(message => notify("Changes on drive", message));
     }
     storage.onChange(changeCallback);
-    promiseIpc.on("action", async (folder:unknown, name:unknown, action:unknown, event?: IpcMainEvent)=>{
-        console.log(`Received action ${action} for '${folder}/${name}'`);
-        if(await storage.handleAction(<string>action, <string>folder, <string>name)){
-            changeCallback();
-        }
-    });
 }
 
 async function loadAndMergeFolders(fsStorage:FsStorage, megaStorage:MegajsStorage):Promise<DisplayedFilesStructure> {
@@ -129,6 +123,13 @@ async function main(webContents:Electron.WebContents) {
 
             addStorageHooks(fsStorage, sendFolders),
             addStorageHooks(megaStorage, sendFolders);
+            promiseIpc.on("action", async (folder:unknown, name:unknown, action:unknown, args:unknown, event?: IpcMainEvent)=>{
+                console.log(`Received action ${action} for '${folder}/${name}'`);
+                if(await fsStorage.handleAction(<string>action, <string>folder, <string>name, args)
+                    || await megaStorage.handleAction(<string>action, <string>folder, <string>name, args)){
+                    sendFolders();
+                }
+            });
 
             promiseIpc.on("requestFolders", ()=>loadAndMergeFolders(fsStorage, megaStorage));
 

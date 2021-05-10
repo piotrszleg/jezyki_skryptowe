@@ -49,6 +49,7 @@ export default function Thumbnail(props) {
             <ThumbnailOptions ref={options} elements={Object.keys(props.file.metadata.actions)} 
                 addActionCallback={props.addActionCallback}
                 editActionCallback={props.editActionCallback}
+                active={props.file.local}
             />
         </Card>
     );

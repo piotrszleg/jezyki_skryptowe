@@ -9,14 +9,16 @@ class DisplayedFile {
     image:string;
     actions:Action[];
     metadata:FileMetadata;
+    local:boolean;
 
-    constructor(name:string, image:string, mdate:Date, actions:Action[], metadata:FileMetadata){
+    constructor(name:string, image:string, mdate:Date, actions:Action[], metadata:FileMetadata, local:boolean) {
         this.name = name;
         this.description = metadata.description;
         this.image = image;
         this.mdate = mdate;
         this.actions = actions;
         this.metadata = metadata;
+        this.local=local;
     }
 }
 
@@ -38,7 +40,7 @@ export function createDisplayedFolders(localFiles: FilesStructure, remoteFiles: 
         if(localCategoryFiles!=undefined){
             for(let file of localCategoryFiles){
                 // file is in local storage
-                const displayedFile=new DisplayedFile(file.name, file.image, file.mdate, ["Train", "Upload"], file.metadata);
+                const displayedFile=new DisplayedFile(file.name, file.image, file.mdate, ["Train", "Upload"], file.metadata, true);
                 categoryMap.set(file.name, displayedFile);
             }
         }
@@ -54,13 +56,13 @@ export function createDisplayedFolders(localFiles: FilesStructure, remoteFiles: 
                         displayedFile.actions=displayedFile.actions.filter(a=>a!="Upload");
                     } else if(displayedFile.mdate<file.mdate){
                         // remote has newer version of the file 
-                        displayedFile=new DisplayedFile(file.name, file.image, file.mdate, ["Train", "Download"], displayedFile.metadata);
+                        displayedFile=new DisplayedFile(file.name, file.image, file.mdate, ["Train", "Download"], displayedFile.metadata, true);
                         categoryMap.set(file.name, displayedFile);
                     }
                 } else {
                     // file is only on remote 
                     console.log(`only on remote ${file.name} ${file.metadata.description}`);
-                    displayedFile=new DisplayedFile(file.name, file.image, file.mdate, ["Download"], file.metadata);
+                    displayedFile=new DisplayedFile(file.name, file.image, file.mdate, ["Download"], file.metadata, false);
                     categoryMap.set(file.name, displayedFile);
                 }
             }

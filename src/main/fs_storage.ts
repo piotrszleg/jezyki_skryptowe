@@ -4,6 +4,7 @@ import {CATEGORIES, FileOrFolder, FilesStructure, base64Encode, FileMetadata} fr
 import { join } from "path";
 import Storage from "./storage_";
 import YAML from "yaml";
+import ScriptExecutor from "./ScriptExecutor";
 
 const readdirPromise = promisify(fs.readdir);
 const statPromise = promisify(fs.stat);
@@ -44,24 +45,46 @@ async function getThumbnail(file:string){
         .reduce((prev, curr)=>curr ? curr : prev) || "";
 }
 
-export default class FsStorage implements Storage<string> {
-    path:string|null=null;
+
+export class FsStorageConfiguration {
+    path:string;
+    scriptExecutor:ScriptExecutor;
+
+    constructor(path:string, scriptExecutor:ScriptExecutor){
+        this.path=path;
+        this.scriptExecutor=scriptExecutor;
+    }
+};
+
+export default class FsStorage implements Storage<FsStorageConfiguration> {
+    path:string | undefined;
+    scriptExecutor:ScriptExecutor | undefined;
     async handleAction(action:string, folder:string, name:string, args:unknown){
-        if(["addAction", "editAction", "deleteAction"].includes(action)){
-            const path=join(<string>this.path, folder, name);
+        if(["addAction", "editAction", "deleteAction", "runAction"].includes(action) && this.path){
+            const casted_args=<string[]>args;
+            const path=join(this.path, folder, name);
             const metadata=getMetadata(path);
             if(action=="addAction" || action=="editAction"){
                 metadata.actions[(<string[]>args)[0]]= (<string[]>args)[1];
+                setMetadata(path, metadata);
             } else if(action=="deleteAction"){
-                delete metadata.actions[(<string[]>args)[0]];
+                delete metadata.actions[casted_args[0]];
+                setMetadata(path, metadata);
             }
-            setMetadata(path, metadata);
+            if(action=="runAction" && this.scriptExecutor){
+                if(<string|undefined>casted_args[1]){
+                    metadata.actions[casted_args[0]]=casted_args[1];
+                    setMetadata(path, metadata);
+                }
+                this.scriptExecutor.execute(metadata.actions[casted_args[0]]);
+            }
             return true;
         }
         else return false;
     }
-    connect(path:string):Promise<void>{
-        this.path = path;
+    connect(configuration:FsStorageConfiguration):Promise<void>{
+        this.path = configuration.path;
+        this.scriptExecutor=configuration.scriptExecutor;
         return new Promise((resolve, reject)=>resolve());
     }
     onChange(callback: (messege : string)=>void){

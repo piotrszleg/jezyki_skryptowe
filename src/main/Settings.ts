@@ -14,7 +14,7 @@ const DEFAULT_SETTINGS = {
     trainScript: "python3 {yolo_path} {model} {dataset}",
     generateScript: "python3 {generator} {data_path}",
     runScript: "python3 -m {program}",
-    shell: "/bin/sh",
+    shell: "powershell /c",
     scriptDefines: [{ name: "data_path", value: "/usr/nnm/data/generated" }],
 };
 
@@ -128,8 +128,20 @@ export default class Settings {
             this.save();
         }
     }
+    get scriptDefines() {
+        return this.document?.scriptDefines || DEFAULT_SETTINGS.scriptDefines;
+    }
+    set scriptDefines(scriptDefines) {
+        if (this.document) {
+            this.document.scriptDefines = scriptDefines;
+            this.save();
+        }
+    }
     get megaPassword() {
         return this.document?.megaPassword || DEFAULT_SETTINGS.megaPassword;
+    }
+    get shell() {
+        return this.document?.shell || DEFAULT_SETTINGS.shell;
     }
     set megaPassword(megaPassword) {
         if (this.document) {

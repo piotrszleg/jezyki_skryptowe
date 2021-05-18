@@ -2,13 +2,14 @@
 
 import { join } from "path";
 import { format as formatUrl } from "url";
-import FsStorage from "./fs_storage";
+import FsStorage, { FsStorageConfiguration } from "./fs_storage";
 import {MegajsStorage, MegaJsStorageConfiguration} from "./mega_storage";
 import Storage from "./storage_";
 import { app, BrowserWindow, Notification, IpcMainEvent } from "electron";
 import { createDisplayedFolders, DisplayedFilesStructure } from "./displayed_folders";
 import Settings from "./settings";
 import promiseIpc from 'electron-promise-ipc';
+import ScriptExecutor from "./ScriptExecutor";
 
 const isDevelopment = process.env.NODE_ENV !== "production";
 
@@ -82,7 +83,8 @@ async function main(webContents:Electron.WebContents) {
 
     const megaStorage=new MegajsStorage();
     const fsStorage=new FsStorage();
-    fsStorage.connect(settings.localPath);
+    const scriptExecutor=new ScriptExecutor(settings, d=>console.log(d));
+    fsStorage.connect(new FsStorageConfiguration(settings.localPath, scriptExecutor));
 
     async function connectToRemote(formData:CredentialsFormData|null){
         function confirmationDialog(message:string):Promise<boolean> {

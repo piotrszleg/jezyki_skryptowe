@@ -71,7 +71,7 @@ export default class CodeEditor extends React.Component {
     }
 
     onDelete() {
-        this.state.actionSender("deleteAction", this.state.action);
+        this.state.actionSender("deleteAction", [this.state.action]);
         this.close();
     }
 

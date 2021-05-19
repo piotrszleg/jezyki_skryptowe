@@ -83,7 +83,7 @@ async function main(webContents:Electron.WebContents) {
 
     const megaStorage=new MegajsStorage();
     const fsStorage=new FsStorage();
-    const scriptExecutor=new ScriptExecutor(settings, d=>console.log(d));
+    const scriptExecutor=new ScriptExecutor(settings, d=>promiseIpc.send("scriptOutput", webContents, d));
     fsStorage.connect(new FsStorageConfiguration(settings.localPath, scriptExecutor));
 
     async function connectToRemote(formData:CredentialsFormData|null){

@@ -72,11 +72,17 @@ export default class FsStorage implements Storage<FsStorageConfiguration> {
                 setMetadata(path, metadata);
             }
             if(action=="runAction" && this.scriptExecutor){
-                if(<string|undefined>casted_args[1]){
-                    metadata.actions[casted_args[0]]=casted_args[1];
+                const actionName=casted_args[0];
+                const actionCode=<string|undefined>casted_args[1];
+                if(actionCode){
+                    metadata.actions[actionName]=actionCode;
                     setMetadata(path, metadata);
                 }
-                this.scriptExecutor.execute(metadata.actions[casted_args[0]]);
+                this.scriptExecutor.execute(metadata.actions[actionName], [
+                    {name: "name", value:name},
+                    {name: "path", value:path},
+                    {name: "action", value:actionName}
+                ]);
             }
             return true;
         }

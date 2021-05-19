@@ -15,6 +15,7 @@ import Loading from "./Loading.js";
 import PropTypes from 'prop-types';
 import { withStyles } from '@material-ui/styles';
 import promiseIpc from 'electron-promise-ipc';
+import ScriptOutput from "./ScriptOutput.js";
 
 class Page extends React.Component {
     constructor(props) {
@@ -32,6 +33,7 @@ class Page extends React.Component {
         this.loginDialog=React.createRef();
         this.thumbnails=React.createRef();
         this.codeEditor=React.createRef();
+        this.scriptOutput=React.createRef();
 
         this.confirmationDialog=React.createRef();
         const savedThis=this;
@@ -121,6 +123,10 @@ class Page extends React.Component {
         if(args){
             console.log("With arguments:"+args);
         }
+        if(action=="runAction" && this.scriptOutput.current){
+            // show output of the action
+            this.scriptOutput.current.open(args[0]);
+        }
         await promiseIpc.send("action", category, name, action, args);
         console.log("Action finished.");
         this.setState(state=>({...state, processedFolders:state.processedFolders.filter(e=>!(e.category==category && e.name==name))}));
@@ -168,6 +174,7 @@ class Page extends React.Component {
                 <Topbar />
                 <ConfirmationDialog ref={this.confirmationDialog} />
                 <CodeEditor ref={this.codeEditor}/>
+                <ScriptOutput ref={this.scriptOutput}/>
                 <PasswordDialog 
                     ref={this.passwordDialog} 
                     callback={this.onPasswordInput.bind(this)} 
@@ -194,7 +201,8 @@ class Page extends React.Component {
 
                             addActionCallback={name=>this.codeEditor.current.openNew((type, args)=>this.sendAction(this.state.selectedFolder, name, type, args))} 
                             editActionCallback={(name, action)=>this.codeEditor.current.openForEdit(action, 
-                                this.state.folders.get(this.state.selectedFolder).find(element=>element.name==name).metadata.actions[action], (type, args)=>this.sendAction(this.state.selectedFolder, name, type, args)) } 
+                                this.state.folders.get(this.state.selectedFolder).find(element=>element.name==name).metadata.actions[action], (type, args)=>
+                                    this.sendAction(this.state.selectedFolder, name, type, args)) } 
                             
                             />)
                     }

@@ -132,6 +132,13 @@ export default class Settings extends React.Component {
                 <Divider />
             </div>
             <h3>Script defines</h3>
+            {["name", "path", "action"].map((name, index) =>
+                <div key={index}>
+                    <TextField disabled label="Name" value={name} />
+                    <TextField disabled label="Value" value="<provided>" />
+                    <Divider />
+                </div>)
+            }
             {this.state.scriptDefines.map(({name, value}, index) =>
                 <div key={index}>
                     <TextField label="Name" value={name||""} onChange={this.scriptDefineChangeHandler("name", index)} />

@@ -22,6 +22,7 @@ export default class CodeEditor extends React.Component {
             code: "rm *.temp",
             isNew: true,
             actionSender: null,
+            dontRunCallback: null,
         };
     }
 
@@ -36,7 +37,7 @@ export default class CodeEditor extends React.Component {
         }));
     }
 
-    openForEdit(action, code, actionSender) {
+    openForEdit(action, code, actionSender, dontRunCallback) {
         this.setState((state) => ({
             ...state,
             action: action,
@@ -44,6 +45,7 @@ export default class CodeEditor extends React.Component {
             isNew: false,
             open: true,
             actionSender: actionSender,
+            dontRunCallback:dontRunCallback
         }));
     }
 
@@ -54,11 +56,18 @@ export default class CodeEditor extends React.Component {
         }));
     }
 
+    dontRunCallback(){
+        if(this.state.dontRunCallback){
+            this.state.dontRunCallback();
+        }
+    }
+
     onSave() {
         this.state.actionSender(this.state.isNew ? "addAction" : "editAction", [
             this.state.action,
             this.state.code,
         ]);
+        this.dontRunCallback();
         this.close();
     }
 
@@ -72,6 +81,7 @@ export default class CodeEditor extends React.Component {
 
     onDelete() {
         this.state.actionSender("deleteAction", [this.state.action]);
+        this.dontRunCallback();
         this.close();
     }
 
@@ -124,7 +134,7 @@ export default class CodeEditor extends React.Component {
                 <DialogActions>
                     {this.state.isNew ? (
                         <Button
-                            onClick={this.close.bind(this)}
+                            onClick={()=>{this.dontRunCallback(); this.close()}}
                             color="primary"
                         >
                             Cancel Adding

@@ -89,6 +89,8 @@ class Page extends React.Component {
             this.setFolders(folders);
         });
 
+        promiseIpc.on("eventAction", this.editAction.bind(this));
+
         const refreshRate=60000;
         setInterval(this.loadFolders.bind(this), refreshRate);
 
@@ -165,6 +167,15 @@ class Page extends React.Component {
     switchToSettings(){
         this.setState(state=>({...state, inSettings:true}));
     }
+
+    editAction(folder, name, action){
+        return new Promise((resolve, reject) =>
+            this.codeEditor.current.openForEdit(action, 
+                this.state.folders.get(folder).find(element=>element.name==name).metadata.actions[action], 
+                (type, args)=>this.sendAction(folder, name, type, args).then(resolve),
+                resolve)
+        );
+    }
     
     render() {
         const { classes } = this.props;
@@ -200,9 +211,7 @@ class Page extends React.Component {
                             actionCallback={(name, action)=>this.sendAction(this.state.selectedFolder, name, action)}
 
                             addActionCallback={name=>this.codeEditor.current.openNew((type, args)=>this.sendAction(this.state.selectedFolder, name, type, args))} 
-                            editActionCallback={(name, action)=>this.codeEditor.current.openForEdit(action, 
-                                this.state.folders.get(this.state.selectedFolder).find(element=>element.name==name).metadata.actions[action], (type, args)=>
-                                    this.sendAction(this.state.selectedFolder, name, type, args)) } 
+                            editActionCallback={(name, action)=>this.editAction(this.state.selectedFolder, name, action) } 
                             
                             />)
                     }

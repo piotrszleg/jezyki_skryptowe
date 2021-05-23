@@ -94,7 +94,9 @@ async function main(webContents:Electron.WebContents) {
                 return (async (message:string)=>true)(message);
             }
         }
-        const credentials=new MegaJsStorageConfiguration("", "", settings.localPath, settings.remotePath, ()=>settings.askBeforeDownloadingBigFiles, confirmationDialog);
+        const credentials=new MegaJsStorageConfiguration("", "", settings.localPath, settings.remotePath, ()=>settings.askBeforeDownloadingBigFiles, confirmationDialog, 
+            (category:string, file:string, action:string)=><Promise<void>>promiseIpc.send("eventAction", webContents, category, file, action));
+
         if(formData){
             console.log("Trying to connect to mega using sent credentials.");
             if(formData.save){

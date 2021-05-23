@@ -23,6 +23,7 @@ function extractMegaID(url:string){
 }
 
 type Confirmation = (message:string)=>Promise<boolean>;
+type EventAction = (category:string, file:string, action:string)=>Promise<void>
 
 export class MegaJsStorageConfiguration {
     email:string;
@@ -31,14 +32,16 @@ export class MegaJsStorageConfiguration {
     localFolder:string;
     askBeforeDownloadingBigFiles:()=>boolean;
     confirmationDialog:Confirmation;
+    eventAction:EventAction;
     constructor(email:string, password:string, localFolder:string, remoteFolder:string, 
-        askBeforeDownloadingBigFiles:()=>boolean, confirmationDialog:Confirmation){
+        askBeforeDownloadingBigFiles:()=>boolean, confirmationDialog:Confirmation, eventAction:EventAction){
         this.email = email;
         this.password=password;
         this.localFolder = localFolder;
         this.remoteFolder=remoteFolder;
         this.askBeforeDownloadingBigFiles=askBeforeDownloadingBigFiles;
         this.confirmationDialog=confirmationDialog;
+        this.eventAction=eventAction;
     }
 };
 
@@ -127,6 +130,7 @@ export class MegajsStorage implements Storage<MegaJsStorageConfiguration> {
     localFolder:string="";
     askBeforeDownloadingBigFiles:()=>boolean=()=>true;
     confirmationDialog:Confirmation=async ()=>true;
+    eventAction:EventAction=async ()=>{};
 
     async handleAction(action:string, folder:string, name:string, args:unknown){
         if(action=="Upload"){
@@ -144,6 +148,7 @@ export class MegajsStorage implements Storage<MegaJsStorageConfiguration> {
         this.localFolder=configuration.localFolder;
         this.confirmationDialog=configuration.confirmationDialog;
         this.askBeforeDownloadingBigFiles=configuration.askBeforeDownloadingBigFiles;
+        this.eventAction=configuration.eventAction;
         return new Promise((resolve, reject)=>{
             try {
                 const credentials={email:configuration.email, password:configuration.password};
@@ -235,6 +240,9 @@ export class MegajsStorage implements Storage<MegaJsStorageConfiguration> {
 
             const remoteMetadata=await getMetadata(folder, file);
             const localMetadata=getLocalMetadata(localPath);
+            if(localMetadata?.actions["onBeforeDownload"] && localMetadata?.actions["onBeforeDownload"]!=""){
+                await this.eventAction(category, file, "onBeforeUpload");
+            }
             if(remoteMetadata && localMetadata && remoteMetadata.uuid!=localMetadata.uuid){
                 if(! await this.confirmationDialog("The local file has different UUID than downloaded, are you sure you want to override it?")){
                     console.log("User cancelled download");
@@ -327,6 +335,9 @@ export class MegajsStorage implements Storage<MegaJsStorageConfiguration> {
         }
         const remoteMetadata=await getMetadata(folder, file);
         const localMetadata=getLocalMetadata(join(this.localFolder, category, file));
+        if(localMetadata?.actions["onBeforeUpload"] && localMetadata?.actions["onBeforeUpload"]!=""){
+            await this.eventAction(category, file, "onBeforeUpload");
+        }
         if(remoteMetadata && localMetadata && remoteMetadata.uuid!=localMetadata.uuid){
             if(! await this.confirmationDialog("The remote file has different UUID than uploaded, are you sure you want to override it?")){
                 console.log("User cancelled upload");

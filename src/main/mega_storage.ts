@@ -98,7 +98,7 @@ function getThumbnail(folder:MFile, basename:string){
 }
 
 function getMetadata(folder:MFile, basename:string){
-    return new Promise<FileMetadata>((resolve, reject) =>{
+    return new Promise<FileMetadata|null>((resolve, reject) =>{
         const file=folder.children.find(f=>f.name==basename+".yaml");
         if(file){
             const stream=file.download();
@@ -111,11 +111,11 @@ function getMetadata(folder:MFile, basename:string){
                 } catch (e) {
                     console.log(`Error while parsing metadata of file ${basename}`);
                     console.log(e);
-                    resolve(new FileMetadata());
+                    resolve(null);
                 }
             });
         }else {
-            resolve(new FileMetadata());
+            resolve(null);
         }
     })
 }
@@ -231,7 +231,11 @@ export class MegajsStorage implements Storage<MegaJsStorageConfiguration> {
                 throw new Error("There is no file that was supposed to be downloaded.");
             }
 
-            if((await getMetadata(folder, file)).uuid!=getLocalMetadata(join(this.localFolder, category, file)).uuid){
+            const localPath=join(this.localFolder, category, file);
+
+            const remoteMetadata=await getMetadata(folder, file);
+            const localMetadata=getLocalMetadata(localPath);
+            if(remoteMetadata && localMetadata && remoteMetadata.uuid!=localMetadata.uuid){
                 if(! await this.confirmationDialog("The local file has different UUID than downloaded, are you sure you want to override it?")){
                     console.log("User cancelled download");
                     // user decided not to download this file
@@ -250,8 +254,6 @@ export class MegajsStorage implements Storage<MegaJsStorageConfiguration> {
                     console.log("User proceeded with download");
                 }
             }
-
-            const localPath=join(this.localFolder, category, file);
 
             await this.deleteOldFiles(localPath);
             
@@ -323,8 +325,9 @@ export class MegajsStorage implements Storage<MegaJsStorageConfiguration> {
             folder=<MutableFile>this.rootFolder.children.find(f=>f.name==category);
             this.categories.set(category, folder);
         }
-
-        if((await getMetadata(folder, file)).uuid!=getLocalMetadata(join(this.localFolder, category, file)).uuid){
+        const remoteMetadata=await getMetadata(folder, file);
+        const localMetadata=getLocalMetadata(join(this.localFolder, category, file));
+        if(remoteMetadata && localMetadata && remoteMetadata.uuid!=localMetadata.uuid){
             if(! await this.confirmationDialog("The remote file has different UUID than uploaded, are you sure you want to override it?")){
                 console.log("User cancelled upload");
                 // user decided not to download this file
@@ -377,7 +380,7 @@ export class MegajsStorage implements Storage<MegaJsStorageConfiguration> {
                                             new Date(f.timestamp*1000),
                                             "",new FileMetadata());
                                         thumbnail.then(v=>result.image=v);
-                                        metadata.then(v=>result.metadata=v);
+                                        metadata.then(v=>result.metadata=v|| new FileMetadata());
                                         return result;
                                     } 
                                     else return null;

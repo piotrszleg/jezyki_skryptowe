@@ -19,16 +19,25 @@ export function getMetadata(file:string) {
             console.log(e);
         }
     }
-    const newMetadata = new FileMetadata();
-    fs.writeFileSync(path, YAML.stringify(newMetadata));
-    return newMetadata;
+    return null;
+}
+
+function getOrCreateMetadata(file:string){
+    const metadata = getMetadata(file);
+    if(metadata){
+        return metadata;
+    } else {
+        const path = file+".yaml";
+        const newMetadata = new FileMetadata();
+        fs.writeFileSync(path, YAML.stringify(newMetadata));
+        return newMetadata;
+    }
 }
 
 function setMetadata(file:string, newMetadata:FileMetadata) {
     const path = file+".yaml";
     fs.writeFileSync(path, YAML.stringify(newMetadata));
 }
-
 
 async function getThumbnail(file:string){
     return (await Promise.all([".png", ".jpeg", ".jpg"]
@@ -56,6 +65,25 @@ export class FsStorageConfiguration {
     }
 };
 
+async function folderLastModification(folder:string){
+    const files = await readdirPromise(folder);
+    let lastModified=(await statPromise(folder)).mtime;
+    await Promise.all(files.map(async file=>{
+        file=join(folder, file);
+        const fileLastModified = (await statPromise(file)).mtime;
+        if(fileLastModified>lastModified){
+            lastModified=fileLastModified;
+        }
+        if((await statPromise(file)).isDirectory()){
+            const folderLastModified=await folderLastModification(file);
+            if(folderLastModified>lastModified){
+                lastModified=fileLastModified;
+            }
+        }
+    }));
+    return lastModified;
+}
+
 export default class FsStorage implements Storage<FsStorageConfiguration> {
     path:string | undefined;
     scriptExecutor:ScriptExecutor | undefined;
@@ -63,7 +91,11 @@ export default class FsStorage implements Storage<FsStorageConfiguration> {
         if(["addAction", "editAction", "deleteAction", "runAction"].includes(action) && this.path){
             const casted_args=<string[]>args;
             const path=join(this.path, folder, name);
-            const metadata=getMetadata(path);
+            let metadata=getMetadata(path);
+
+            if(!metadata){
+                metadata=new FileMetadata();
+            }
             if(action=="addAction" || action=="editAction"){
                 metadata.actions[(<string[]>args)[0]]= (<string[]>args)[1];
                 setMetadata(path, metadata);
@@ -122,7 +154,7 @@ export default class FsStorage implements Storage<FsStorageConfiguration> {
                         }
                         if(stats.isDirectory()){
                             // list only directories
-                            return new FileOrFolder(file, filePath, stats.mtime, await getThumbnail(filePath), getMetadata(filePath));
+                            return new FileOrFolder(file, filePath, await folderLastModification(filePath), await getThumbnail(filePath), getOrCreateMetadata(filePath));
                         } else {
                             return null;
                         }

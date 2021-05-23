@@ -7,6 +7,7 @@ import fs from "fs";
 import archiver from "archiver";
 import unzipper from "unzipper";
 import YAML from "yaml";
+import {getMetadata as getLocalMetadata} from "./fs_storage";
 
 const BIG_FILE_SIZE=3000000;
 
@@ -28,12 +29,15 @@ export class MegaJsStorageConfiguration {
     password:string;
     remoteFolder:string;
     localFolder:string;
+    askBeforeDownloadingBigFiles:()=>boolean;
     confirmationDialog:Confirmation;
-    constructor(email:string, password:string, localFolder:string, remoteFolder:string, confirmationDialog:Confirmation){
+    constructor(email:string, password:string, localFolder:string, remoteFolder:string, 
+        askBeforeDownloadingBigFiles:()=>boolean, confirmationDialog:Confirmation){
         this.email = email;
         this.password=password;
         this.localFolder = localFolder;
         this.remoteFolder=remoteFolder;
+        this.askBeforeDownloadingBigFiles=askBeforeDownloadingBigFiles;
         this.confirmationDialog=confirmationDialog;
     }
 };
@@ -121,6 +125,7 @@ export class MegajsStorage implements Storage<MegaJsStorageConfiguration> {
     rootFolder: MutableFile|null=null;
     categories:Map<string, MutableFile>=new Map<string, MutableFile>();
     localFolder:string="";
+    askBeforeDownloadingBigFiles:()=>boolean=()=>true;
     confirmationDialog:Confirmation=async ()=>true;
 
     async handleAction(action:string, folder:string, name:string, args:unknown){
@@ -138,6 +143,7 @@ export class MegajsStorage implements Storage<MegaJsStorageConfiguration> {
     connect(configuration:MegaJsStorageConfiguration):Promise<void>{
         this.localFolder=configuration.localFolder;
         this.confirmationDialog=configuration.confirmationDialog;
+        this.askBeforeDownloadingBigFiles=configuration.askBeforeDownloadingBigFiles;
         return new Promise((resolve, reject)=>{
             try {
                 const credentials={email:configuration.email, password:configuration.password};
@@ -224,7 +230,18 @@ export class MegajsStorage implements Storage<MegaJsStorageConfiguration> {
             if(!megaFile){
                 throw new Error("There is no file that was supposed to be downloaded.");
             }
-            if(megaFile.size>=BIG_FILE_SIZE){
+
+            if((await getMetadata(folder, file)).uuid!=getLocalMetadata(join(this.localFolder, category, file)).uuid){
+                if(! await this.confirmationDialog("The local file has different UUID than downloaded, are you sure you want to override it?")){
+                    console.log("User cancelled download");
+                    // user decided not to download this file
+                    return;
+                } else {
+                    console.log("User proceeded with download");
+                }
+            }
+
+            if(megaFile.size>=BIG_FILE_SIZE && this.askBeforeDownloadingBigFiles()){
                 if(! await this.confirmationDialog(`Are you sure you want to download a file of size ${megaFile.size}B`)){
                     console.log("User cancelled download");
                     // user decided not to download this file
@@ -243,19 +260,8 @@ export class MegajsStorage implements Storage<MegaJsStorageConfiguration> {
             await this.downloadNewFiles(localPath, file, category, folder, <MutableFile>megaFile);
     }
 
-    upload(category:string, file:string){
+    uploadNewFiles(folder:MutableFile, category:string, file:string){
         return new Promise<void>((resolve, reject) =>{
-            if(this.rootFolder==null){
-                throw new Error("You must call connect before upload.");
-            }
-            let folder=this.categories.get(category);
-            if(!folder){
-                // if category folder does not exist create it
-                this.rootFolder.mkdir(category);
-                folder=<MutableFile>this.rootFolder.children.find(f=>f.name==category);
-                this.categories.set(category, folder);
-            }
-
             const resolver=new Resolver(()=>{
                 console.log("Finished uploading "+file);
                 resolve();
@@ -304,6 +310,32 @@ export class MegajsStorage implements Storage<MegaJsStorageConfiguration> {
             resolver.finishBorrowing();
         });
     }
+
+    async upload(category:string, file:string){
+        if(this.rootFolder==null){
+            throw new Error("You must call connect before upload.");
+        }
+
+        let folder=this.categories.get(category);
+        if(!folder){
+            // if category folder does not exist create it
+            this.rootFolder.mkdir(category);
+            folder=<MutableFile>this.rootFolder.children.find(f=>f.name==category);
+            this.categories.set(category, folder);
+        }
+
+        if((await getMetadata(folder, file)).uuid!=getLocalMetadata(join(this.localFolder, category, file)).uuid){
+            if(! await this.confirmationDialog("The remote file has different UUID than uploaded, are you sure you want to override it?")){
+                console.log("User cancelled upload");
+                // user decided not to download this file
+                return;
+            } else {
+                console.log("User proceeded with download");
+            }
+        }
+        await this.uploadNewFiles(folder, category, file);
+    }
+    
     onChange(callback: (message : string)=>void){
         if(this.storage==null){
             throw new Error("You must call connect before onChange.");

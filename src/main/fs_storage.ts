@@ -9,7 +9,7 @@ import ScriptExecutor from "./ScriptExecutor";
 const readdirPromise = promisify(fs.readdir);
 const statPromise = promisify(fs.stat);
 
-function getMetadata(file:string) {
+export function getMetadata(file:string) {
     const path = file+".yaml";
     if(fs.existsSync(path) && fs.statSync(path).isFile()){
         try {

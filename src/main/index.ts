@@ -94,7 +94,7 @@ async function main(webContents:Electron.WebContents) {
                 return (async (message:string)=>true)(message);
             }
         }
-        const credentials=new MegaJsStorageConfiguration("", "", settings.localPath, settings.remotePath, confirmationDialog);
+        const credentials=new MegaJsStorageConfiguration("", "", settings.localPath, settings.remotePath, ()=>settings.askBeforeDownloadingBigFiles, confirmationDialog);
         if(formData){
             console.log("Trying to connect to mega using sent credentials.");
             if(formData.save){
@@ -116,7 +116,7 @@ async function main(webContents:Electron.WebContents) {
         }
 
         try {
-            await megaStorage.connect(new MegaJsStorageConfiguration(credentials.email, credentials.password, settings.localPath, settings.remotePath, confirmationDialog));
+            await megaStorage.connect(credentials);
             console.log("Connecting to Mega succeeded.");
 
             async function sendFolders(){

@@ -150,31 +150,6 @@ export default class Settings extends React.Component {
                 Add
             </Button>
             <Divider />
-            <h3>Default Scripts</h3>
-            <br />
-            <div>
-                <TextField
-                    fullWidth
-                    label="Train"
-                    value={this.state.trainScript} 
-                    onChange={this.textChangeHandler("trainScript")} 
-                />
-                <Divider />
-                <TextField
-                    fullWidth
-                    label="Generate"
-                    value={this.state.generateScript} 
-                    onChange={this.textChangeHandler("generateScript")} 
-                />
-                <Divider />
-                <TextField
-                    fullWidth
-                    label="Run"
-                    value={this.state.runScript} 
-                    onChange={this.textChangeHandler("runScript")} 
-                />
-                <Divider />
-            </div>
             <h3>Extra options</h3>
             <div>
                 <FormControl component="fieldset">

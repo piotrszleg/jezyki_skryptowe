@@ -88,7 +88,7 @@ export default class FsStorage implements Storage<FsStorageConfiguration> {
     path:string | undefined;
     scriptExecutor:ScriptExecutor | undefined;
     async handleAction(action:string, folder:string, name:string, args:unknown){
-        if(["addAction", "editAction", "deleteAction", "runAction"].includes(action) && this.path){
+        if(["addAction", "editAction", "deleteAction", "runAction", "editDescription"].includes(action) && this.path){
             const casted_args=<string[]>args;
             const path=join(this.path, folder, name);
             let metadata=getMetadata(path);
@@ -115,6 +115,10 @@ export default class FsStorage implements Storage<FsStorageConfiguration> {
                     {name: "path", value:path},
                     {name: "action", value:actionName}
                 ]);
+            }
+            if(action=="editDescription") {
+                metadata.description=casted_args[0];
+                setMetadata(path, metadata);
             }
             return true;
         }

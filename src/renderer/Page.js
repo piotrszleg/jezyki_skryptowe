@@ -11,6 +11,7 @@ import PasswordDialog from "./PasswordDialog.js";
 import SetPasswordDialog from "./SetPasswordDialog.js";
 import ConfirmationDialog from "./ConfirmationDialog.js";
 import CodeEditor from "./CodeEditor.js";
+import DescriptionEditor from "./DescriptionEditor.js";
 import Loading from "./Loading.js";
 import PropTypes from 'prop-types';
 import { withStyles } from '@material-ui/styles';
@@ -34,6 +35,7 @@ class Page extends React.Component {
         this.thumbnails=React.createRef();
         this.codeEditor=React.createRef();
         this.scriptOutput=React.createRef();
+        this.descriptionEditor=React.createRef();
 
         this.confirmationDialog=React.createRef();
         const savedThis=this;
@@ -129,7 +131,9 @@ class Page extends React.Component {
             // show output of the action
             this.scriptOutput.current.open(args[0]);
         }
-        await promiseIpc.send("action", category, name, action, args);
+        if(await promiseIpc.send("action", category, name, action, args)){
+            this.loadFolders();
+        }
         console.log("Action finished.");
         this.setState(state=>({...state, processedFolders:state.processedFolders.filter(e=>!(e.category==category && e.name==name))}));
     }
@@ -185,6 +189,7 @@ class Page extends React.Component {
                 <Topbar />
                 <ConfirmationDialog ref={this.confirmationDialog} />
                 <CodeEditor ref={this.codeEditor}/>
+                <DescriptionEditor ref={this.descriptionEditor}/>
                 <ScriptOutput ref={this.scriptOutput}/>
                 <PasswordDialog 
                     ref={this.passwordDialog} 
@@ -209,7 +214,10 @@ class Page extends React.Component {
                             isProcessed={name=>this.isProcessed(this.state.selectedFolder, name)} 
                             folders={this.getItemsList()} 
                             actionCallback={(name, action)=>this.sendAction(this.state.selectedFolder, name, action)}
-
+                            
+                            editDescriptionCallback={name=>this.descriptionEditor.current.open(name, 
+                                this.state.folders.get(this.state.selectedFolder).find(element=>element.name==name).metadata.description,
+                                (type, args)=>this.sendAction(this.state.selectedFolder, name, type, args))} 
                             addActionCallback={name=>this.codeEditor.current.openNew((type, args)=>this.sendAction(this.state.selectedFolder, name, type, args))} 
                             editActionCallback={(name, action)=>this.editAction(this.state.selectedFolder, name, action) } 
                             

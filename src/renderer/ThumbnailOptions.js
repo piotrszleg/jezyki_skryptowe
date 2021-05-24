@@ -52,6 +52,7 @@ export default class ThumbnailOptions extends React.Component {
                         aria-label="vertical contained primary button group"
                         variant="text"
                     >
+                        <Button disabled={!this.props.active} onClick={()=>{this.props.editDescriptionCallback(); this.close();} }>Edit Description</Button>
                         {this.props.elements.map((e, i)=>
                             <Button disabled={!this.props.active} key={i} onClick={()=>{console.log(e); this.props.editActionCallback(e); this.close(); }} >{e}</Button>
                         )}

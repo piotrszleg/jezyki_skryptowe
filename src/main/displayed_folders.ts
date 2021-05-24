@@ -1,6 +1,15 @@
 import {FilesStructure, CATEGORIES, FileMetadata} from "./file_commons";
 
-type Action = "Train" | "Upload" | "Download";
+type Action = "Train" | "Run" | "Eval" | "Upload" | "Download";
+
+const CATEGORY_DEFAULT_ACTION
+:{[index: string]: Action}
+={
+    "datasets":"Train",
+    "models":"Eval",
+    "generators":"Run",
+    "programs":"Run",
+}
 
 class DisplayedFile {
     name:string;
@@ -35,12 +44,13 @@ export function createDisplayedFolders(localFiles: FilesStructure, remoteFiles: 
     
     for(let category of CATEGORIES){
         const categoryMap = new Map<string, DisplayedFile>();
+        const defaultAction=CATEGORY_DEFAULT_ACTION[category];
 
         const localCategoryFiles=localFiles.get(category);
         if(localCategoryFiles!=undefined){
             for(let file of localCategoryFiles){
                 // file is in local storage
-                const displayedFile=new DisplayedFile(file.name, file.image, file.mdate, ["Train", "Upload"], file.metadata, true);
+                const displayedFile=new DisplayedFile(file.name, file.image, file.mdate, [defaultAction, "Upload"], file.metadata, true);
                 categoryMap.set(file.name, displayedFile);
             }
         }
@@ -56,7 +66,7 @@ export function createDisplayedFolders(localFiles: FilesStructure, remoteFiles: 
                         displayedFile.actions=displayedFile.actions.filter(a=>a!="Upload");
                     } else if(displayedFile.mdate<file.mdate){
                         // remote has newer version of the file 
-                        displayedFile=new DisplayedFile(file.name, file.image, file.mdate, ["Train", "Download"], displayedFile.metadata, true);
+                        displayedFile=new DisplayedFile(file.name, file.image, file.mdate, [defaultAction, "Download"], displayedFile.metadata, true);
                         categoryMap.set(file.name, displayedFile);
                     }
                 } else {

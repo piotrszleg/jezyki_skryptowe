@@ -110,7 +110,7 @@ export default class FsStorage implements Storage<FsStorageConfiguration> {
                     metadata.actions[actionName]=actionCode;
                     setMetadata(path, metadata);
                 }
-                this.scriptExecutor.execute(metadata.actions[actionName], [
+                this.scriptExecutor.execute(metadata.actions[actionName] || "", [
                     {name: "name", value:name},
                     {name: "path", value:path},
                     {name: "action", value:actionName}

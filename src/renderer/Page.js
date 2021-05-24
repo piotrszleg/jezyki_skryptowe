@@ -122,6 +122,12 @@ class Page extends React.Component {
     }
 
     async sendAction(category, name, action, args=undefined){
+
+        if(["Train", "Run", "Eval"].includes(action)) {
+            this.editAction(this.state.selectedFolder, name, action);
+            return;
+        }
+
         this.setState(state=>({...state, processedFolders:state.processedFolders.concat({category:category, name:name})}));
         console.log(`Requested action ${action} for '${category}/${name}'`);
         if(args){

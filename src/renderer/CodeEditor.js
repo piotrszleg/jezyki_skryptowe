@@ -151,7 +151,7 @@ export default class CodeEditor extends React.Component {
                         onClick={this.onSave.bind(this)}
                         color="primary"
                     >
-                        Save and close
+                        Close
                     </Button>
                     {!this.state.isNew ? (
                         <Button

@@ -293,7 +293,7 @@ export class MegajsStorage implements Storage<MegaJsStorageConfiguration> {
             
             // upload current zipped directory 
             resolver.borrow();
-            const tempFileName = join(__dirname, 'temp.zip');
+            const tempFileName = join(this.localFolder, category, 'temp.zip');
             const output = fs.createWriteStream(tempFileName);
             archive.on("error", throwIfError);
             archive.directory(join(this.localFolder, category, file), false);

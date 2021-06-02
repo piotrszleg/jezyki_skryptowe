@@ -89,7 +89,6 @@ async function main(webContents:Electron.WebContents) {
     const megaStorage=new MegajsStorage();
     const fsStorage=new FsStorage();
     const scriptExecutor=new ScriptExecutor(settings, d=>promiseIpc.send("scriptOutput", webContents, d));
-    fsStorage.connect(new FsStorageConfiguration(settings.localPath, scriptExecutor));
 
     async function connectToRemote(formData:CredentialsFormData|null){
         function confirmationDialog(message:string):Promise<boolean> {
@@ -124,6 +123,7 @@ async function main(webContents:Electron.WebContents) {
 
         try {
             await megaStorage.connect(credentials);
+            fsStorage.connect(new FsStorageConfiguration(settings.localPath, scriptExecutor));
             console.log("Connecting to Mega succeeded.");
 
             async function sendFolders(){

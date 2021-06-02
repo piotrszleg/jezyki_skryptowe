@@ -5,11 +5,16 @@ import { format as formatUrl } from "url";
 import FsStorage, { FsStorageConfiguration } from "./fs_storage";
 import {MegajsStorage, MegaJsStorageConfiguration} from "./mega_storage";
 import Storage from "./storage_";
-import { app, BrowserWindow, Notification, IpcMainEvent } from "electron";
+import { app, BrowserWindow, Notification, IpcMainEvent, dialog } from "electron";
 import { createDisplayedFolders, DisplayedFilesStructure } from "./displayed_folders";
 import Settings from "./settings";
 import promiseIpc from 'electron-promise-ipc';
 import ScriptExecutor from "./ScriptExecutor";
+
+// Disable error dialogs by overriding
+dialog.showErrorBox = function(title, content) {
+    console.log(`${title}\n${content}`);
+};
 
 const isDevelopment = process.env.NODE_ENV !== "production";
 

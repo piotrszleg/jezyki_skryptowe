@@ -8,6 +8,7 @@ import ScriptExecutor from "./ScriptExecutor";
 
 const readdirPromise = promisify(fs.readdir);
 const statPromise = promisify(fs.stat);
+const mkdirPromise = promisify(fs.mkdir);
 
 export function getMetadata(file:string) {
     const path = file+".yaml";
@@ -84,6 +85,12 @@ async function folderLastModification(folder:string){
     return lastModified;
 }
 
+async function optionallyCreateFolder(path:string){
+    try {
+        await mkdirPromise(path, {recursive: true});
+    } catch(err){}
+}
+
 export default class FsStorage implements Storage<FsStorageConfiguration> {
     path:string | undefined;
     scriptExecutor:ScriptExecutor | undefined;
@@ -136,36 +143,38 @@ export default class FsStorage implements Storage<FsStorageConfiguration> {
         // event is either change or rename
         fs.watch(this.path, {recursive: true}, (event, filename)=>callback(`File or folder "${filename}" was `+event+"d"));
     }
-    getFolders():Promise<FilesStructure>{
-        return new Promise<FilesStructure>( (resolve, reject)=>{
-            if(!this.path){
-                reject("You must call connect before getFolders.");
+    async getFolders():Promise<FilesStructure>{
+        if(!this.path){
+            throw new Error("You must call connect before getFolders.");
+        }
+        const result=new Map<string, FileOrFolder[]>();
+        const path=<string>this.path;
+        await optionallyCreateFolder(path);
+        await Promise.all(CATEGORIES.map(
+            async category=>{
+                const categoryPath=join(path, category);
+                await optionallyCreateFolder(categoryPath);
+                const files=await readdirPromise(categoryPath);
+                const filesData:FileOrFolder[]=<FileOrFolder[]>(await Promise.all(files.map(async (file:string)=>{
+                    const filePath=join(categoryPath, file);
+                    let stats;
+                    try {
+                        stats=await statPromise(filePath);
+                    } catch(err){
+                        // stat error, the file was deleted in the process of scanning, skip file
+                        // console.log(err);
+                        return null;
+                    }
+                    if(stats.isDirectory()){
+                        // list only directories
+                        return new FileOrFolder(file, filePath, await folderLastModification(filePath), await getThumbnail(filePath), getOrCreateMetadata(filePath));
+                    } else {
+                        return null;
+                    }
+                }))).filter(e=>e!=null);
+                result.set(category, filesData);
             }
-            const result=new Map<string, FileOrFolder[]>();
-            Promise.all(CATEGORIES.map(
-                async category=>{
-                    const categoryPath=join(<string>this.path, category)
-                    const files=await readdirPromise(categoryPath);
-                    const filesData:FileOrFolder[]=<FileOrFolder[]>(await Promise.all(files.map(async (file:string)=>{
-                        const filePath=join(categoryPath, file);
-                        let stats;
-                        try {
-                            stats=await statPromise(filePath);
-                        } catch(err){
-                            // stat error, the file was deleted in the process of scanning, skip file
-                            // console.log(err);
-                            return null;
-                        }
-                        if(stats.isDirectory()){
-                            // list only directories
-                            return new FileOrFolder(file, filePath, await folderLastModification(filePath), await getThumbnail(filePath), getOrCreateMetadata(filePath));
-                        } else {
-                            return null;
-                        }
-                    }))).filter(e=>e!=null);
-                    result.set(category, filesData);
-                }
-            )).then(()=>resolve(result));
-        });
+        ));
+        return result;
     }
 }

@@ -23,7 +23,7 @@ export const styles =  ({
     content: {
         flexGrow: 1,
         padding: 10,
-    },
+    }
 });
 
 export const getClasses = makeStyles((theme) => styles);

@@ -7,7 +7,7 @@ import fs from "fs";
 const DEFAULT_SETTINGS = {
     megaEmail: "",
     megaPassword: "",
-    localPath: "E:/jezyki_skryptowe",
+    localPath: app.getPath("appData"),
     remotePath: "https://mega.nz/fm/MOp01QxZ",
     autoLogin: false,
     askBeforeDownloadingBigFiles: false,
